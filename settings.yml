@@ -1,0 +1,62 @@
+# API Key to connect with developer.clashroyale.com
+api-key: ABCD
+
+# Discord Bot Token
+bot-token: ABCD
+
+# Path to access the linked accounts file
+linked-accounts-path: ''
+
+link-channel-ignored-ids:
+  - 0
+  
+servers:
+  main: 0
+  emoji: 0
+
+channels:
+  link: 0
+  sync-logs: 0
+  bot-logs: 0
+  dunce-logs: 0
+
+  suggestions: 0
+
+roles:
+  utility:
+    ignore-nickname-change: 0
+    dunce: 0
+    accepted-tournament-rules: 0
+    disqualified: 0
+    
+  clans:
+    basic:
+      account-linked: 0
+      temporary: 0
+      wick-verified: 0
+
+
+    
+    leader: 0
+    coleader: 0
+    elder: 0
+    member: 0
+    
+    king-level:
+      1: 0
+      10: 0
+      14: 0
+      18: 0
+      22: 0
+      26: 0
+      30: 0
+      34: 0
+      38: 0
+      42: 0
+      46: 0
+      50: 0
+
+trades:
+  max-cards: 15
+  incoming-trades: 0
+  trade-clan-id: ABCDEFG
