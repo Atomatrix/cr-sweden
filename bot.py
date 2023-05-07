@@ -157,11 +157,12 @@ async def info(ctx):
     embed = discord.Embed(title=f'{server_name} Info', color=defaultColour)
 
     embed.add_field(name='Server ID', value=f':computer: `{server.id}`')
-    embed.add_field(name='Bot Version', value=f':open_file_folder: `v{bot_version}`')
+    embed.add_field(name='Bot Version', value=f':robot: `v{bot_version}`')
     embed.add_field(name='Language', value=f':flag_se: `se`')
     embed.add_field(name='Linked Accounts', value=f':handshake: `{linkedAccounts}`')
+    embed.add_field(name='Open Source Repository', value=f':open_file_folder: [thomaskeig/cr-sweden](https://github.com/thomaskeig/cr-sweden)')
 
-    embed.set_footer(text=f'{bot.user} - Created by thomaskeig.com', icon_url=bot.user.avatar.url)
+    embed.set_footer(text=f'{bot.user} - Created by thomaskeig', icon_url=bot.user.avatar.url)
 
     await ctx.respond(embed=embed)
 
