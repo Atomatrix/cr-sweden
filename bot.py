@@ -170,6 +170,18 @@ async def info(ctx):
 @bot.event
 async def on_message(message):
 
+    # // Ignore bot messages
+    if message.author == bot.user:
+        return
+    
+    # // Auto publish announcement channel messages
+    try:
+        if message.channel.is_news():
+            await message.publish()
+            print(f'Automatically published message from #{message.channel} (Message ID: {message.id})')
+    except:
+        pass
+
     if message.channel.id == settings['channels']['link'] and message.author.id != bot.user.id and message.author.id not in settings['link-channel-ignored-ids']:
         #Check if message was sent in link channel ||| message not sent by the bot ||| message not sent by ignored users
         message_content = message.content
