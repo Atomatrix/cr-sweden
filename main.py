@@ -479,7 +479,7 @@ async def sync_command(userid):
                     await user.remove_roles(discord.utils.get(user.guild.roles, id=settings['roles']['clans']['basic']['temporary']))
 
                 # GIVE DUNCE ROLE
-                with open('../dunce.json', 'r') as f:
+                with open('./dunce.json', 'r') as f:
                     data = json.load(f)
                 
                 dunce = False
@@ -553,7 +553,7 @@ async def suggest(ctx, suggestion):
 @commands.cooldown(3, 15, commands.BucketType.user) # The command can only be used 3 times in 15 seconds
 async def suggest(ctx):
     
-    with open('../dunce.json', 'r') as f:
+    with open('./dunce.json', 'r') as f:
         data = json.load(f)
     
     message = ''
@@ -573,7 +573,7 @@ async def suggest(ctx):
 @commands.cooldown(5, 3600, commands.BucketType.user) # The command can only be used 5 times in 3600 seconds
 async def suggest(ctx, user, reason):
     
-    with open('../dunce.json', 'r') as f:
+    with open('./dunce.json', 'r') as f:
         data = json.load(f)
     
     found = False
@@ -590,7 +590,7 @@ async def suggest(ctx, user, reason):
         newData = {"user": user.id, "reason": reason}
         data.append(newData)
 
-        with open('../dunce.json', 'w') as f:
+        with open('./dunce.json', 'w') as f:
             json.dump(data, f, indent=4)
 
         channel = bot.get_channel(settings['channels']['dunce-logs'])
@@ -605,7 +605,7 @@ async def suggest(ctx, user, reason):
 @commands.cooldown(5, 3600, commands.BucketType.user) # The command can only be used 5 times in 3600 seconds
 async def suggest(ctx, user):
     
-    with open('../dunce.json', 'r') as f:
+    with open('./dunce.json', 'r') as f:
         data = json.load(f)
     
     found = False
@@ -623,7 +623,7 @@ async def suggest(ctx, user):
         
         data.pop(index)
 
-        with open('../dunce.json', 'w') as f:
+        with open('./dunce.json', 'w') as f:
             json.dump(data, f, indent=4)
         
         await ctx.respond('Jag tog ut spelaren ur skamvrån!', ephemeral=True)
