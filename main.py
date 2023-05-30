@@ -299,9 +299,10 @@ def remove_all_values_from_list(the_list, val):
 async def sync_command(userid):
     try:
 
-        if await is_linked_discord(userid):
+        channel = bot.get_channel(settings['channels']['sync-logs'])
 
-            channel = bot.get_channel(settings['channels']['sync-logs'])
+        if await is_linked_discord(userid):
+            
             server = bot.get_guild(settings['servers']['main'])
             user = server.get_member(int(userid))
             
