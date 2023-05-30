@@ -4,8 +4,11 @@ api-key: ABCD
 # Discord Bot Token
 bot-token: ABCD
 
-# Path to access the linked accounts file
-linked-accounts-path: ''
+# Settings to manage MongoDB
+mongodb:
+  database-name: 'name.abcdef'
+  username: 'username'
+  password: 'password'
 
 link-channel-ignored-ids:
   - 0

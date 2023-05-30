@@ -15,13 +15,15 @@ import random, string
 import datetime
 import dateutil.parser as dp
 
+# Import local utilities for database management
+from database_utils import *
+
 print('Loading Settings...')
 
 # Load Settings
 with open('./settings.yml', encoding="utf8") as file:
     try:
 
-        global settings
         settings = yaml.load(file, Loader=yaml.FullLoader)
 
         print('Successfully loaded settings!')
@@ -96,10 +98,8 @@ async def on_ready():
 
 @bot.event
 async def on_member_join(member):
-    with open(settings['linked-accounts-path'], 'r') as f:
-        response = json.load(f)
 
-    linked_users_list = list(response.keys())
+    linked_users_list = await all_linked_users()
 
     for userid in linked_users_list:
         if str(member.id) == userid:
@@ -115,17 +115,6 @@ async def log(message, colour):
     channel = bot.get_channel(settings['channels']['bot-logs'])
     embed = discord.Embed(description=message, color=colour)
     await channel.send(embed=embed)
-
-def check_linked(user_id):
-    with open(settings['linked-accounts-path'], 'r') as f:
-        data = json.load(f)
-    
-    #dictdata = json.loads(data)
-
-    if str(user_id) in data:
-        return True
-    else:
-        return False
 
 def remove_emojis(text):
     emoji_pattern = re.compile("["
@@ -148,18 +137,13 @@ async def info(ctx):
     server = bot.get_guild(settings['servers']['main'])
     server_name = remove_emojis(server.name)
 
-    # Generate Linked Accounts
-    with open(settings['linked-accounts-path'], 'r') as f:
-        data = json.load(f)
-    linkedAccounts = len(list(data.keys()))
-
     # Create Embed
     embed = discord.Embed(title=f'{server_name} Info', color=defaultColour)
 
     embed.add_field(name='Server ID', value=f':computer: `{server.id}`')
     embed.add_field(name='Bot Version', value=f':robot: `v{bot_version}`')
     embed.add_field(name='Language', value=f':flag_se: `se`')
-    embed.add_field(name='Linked Accounts', value=f':handshake: `{linkedAccounts}`')
+    embed.add_field(name='Linked Accounts', value=f':handshake: `{await total_linked()}`')
     embed.add_field(name='Open Source Repository', value=f':open_file_folder: [thomaskeig/cr-sweden](https://github.com/thomaskeig/cr-sweden)')
 
     embed.set_footer(text=f'{bot.user} - Created by thomaskeig', icon_url=bot.user.avatar.url)
@@ -190,7 +174,7 @@ async def on_message(message):
 
         if message_content.lower() == 'unlink': # If they attempt to unlink their account
 
-            if not check_linked(message.author.id):
+            if not await is_linked_discord(message.author.id):
                 embed = discord.Embed(description=f'<@{message.author.id}> Du har inte länkat ditt konto, därför kan du inte unlinka det!', color=redColour)
                 embed_message = await channel.send(embed=embed)
                 await message.delete() # Delete original message
@@ -198,12 +182,9 @@ async def on_message(message):
                 await embed_message.delete() # Delete embed message
             
             else:
-
-                with open(settings['linked-accounts-path'], 'r') as f: # Open file
-                    data = json.load(f)
-                data.pop(str(message.author.id)) # Remove entry
-                with open(settings['linked-accounts-path'], 'w') as f: # Save file
-                    json.dump(data, f, indent=2)
+                
+                # Unlink the account from the database
+                await remove_user(message.author.id)
 
                 embed = discord.Embed(description=f'<@{message.author.id}> Ditt konto är nu länkat! Välkommen in!', color=greenColour)
                 embed_message = await channel.send(embed=embed)
@@ -238,7 +219,7 @@ async def on_message(message):
 
         else:
 
-            if check_linked(message.author.id):
+            if await is_linked_discord(message.author.id):
                 embed = discord.Embed(description=f'<@{message.author.id}> Du har redan länkat ett konto! Unlinka det genom att skriva `unlink` i den här kanalen!', color=redColour)
                 embed_message = await channel.send(embed=embed)
                 await message.delete()
@@ -254,11 +235,8 @@ async def on_message(message):
                     await embed_message.delete()
                 
                 tag = message_content.replace('#', '')
-                
-                with open(settings['linked-accounts-path'], 'r') as f:
-                    data = json.load(f)
 
-                if tag in data.__str__(): # Check if the tag already linked
+                if await is_linked_cr(tag): # Check if the tag already linked
                     embed = discord.Embed(description=f'<@{message.author.id}> #tag är redan i använding. Vänligen länka ditt egna konto!', color=redColour)
                     embed_message = await channel.send(embed=embed)
                     await message.delete()
@@ -298,11 +276,8 @@ async def on_message(message):
                                 official_tag = profile['tag'].replace('#', '')
                                 official_name = profile['name']
                                 
-                                with open(settings['linked-accounts-path'], 'r') as f:
-                                    data = json.load(f)
-                                data[message.author.id] = official_tag
-                                with open(settings['linked-accounts-path'], 'w') as f:
-                                    json.dump(data, f, indent=2)
+                                # Link the account in the database
+                                await add_user(discordid=message.author.id, cr_tag=official_tag)
 
                                 embed = discord.Embed(description=f'<@{message.author.id}> har länkat sitt konto till "{official_name}" `#{official_tag}`', color=greenColour)
                                 embed_message = await channel.send(embed=embed)
@@ -324,16 +299,13 @@ def remove_all_values_from_list(the_list, val):
 async def sync_command(userid):
     try:
 
-        if check_linked(userid):
+        if await is_linked_discord(userid):
 
             channel = bot.get_channel(settings['channels']['sync-logs'])
             server = bot.get_guild(settings['servers']['main'])
             user = server.get_member(int(userid))
-
-            with open(settings['linked-accounts-path'], 'r') as f:
-                response = json.load(f)
             
-            tag = response[str(userid)]
+            tag = await get_tag(userid)
 
             async with aiohttp.ClientSession() as cs:
                 async with cs.get(f'https://proxy.royaleapi.dev/v1/players/%23{tag}', headers=api) as data:
@@ -479,16 +451,11 @@ async def sync_command(userid):
                     await user.remove_roles(discord.utils.get(user.guild.roles, id=settings['roles']['clans']['basic']['temporary']))
 
                 # GIVE DUNCE ROLE
-                with open('./dunce.json', 'r') as f:
-                    data = json.load(f)
-                
-                dunce = False
-                for a in data:
-                    if a['user'] == user.id:
-                        dunce = True
-                        if settings['roles']['utility']['dunce'] not in [r.id for r in user.roles]: # If they don't have the role, give it to them
-                            await user.add_roles(discord.utils.get(user.guild.roles, id=settings['roles']['utility']['dunce']))
-                        break
+                dunce = await dunce_status(userid)
+
+                if dunce:
+                    if settings['roles']['utility']['dunce'] not in [r.id for r in user.roles]: # If they don't have the role, give it to them
+                        await user.add_roles(discord.utils.get(user.guild.roles, id=settings['roles']['utility']['dunce']))
                         
                 if not dunce:
                     if settings['roles']['utility']['dunce'] in [r.id for r in user.roles]: # If they have the role, remove it from them
@@ -553,14 +520,11 @@ async def suggest(ctx, suggestion):
 @commands.cooldown(3, 15, commands.BucketType.user) # The command can only be used 3 times in 15 seconds
 async def suggest(ctx):
     
-    with open('./dunce.json', 'r') as f:
-        data = json.load(f)
-    
     message = ''
 
-    for i in data:
-        user = await bot.fetch_user(i["user"])
-        message = message + f'{clashdot_emoji} {user} | `{i["reason"]}`\n'
+    for userid in await all_dunce_users():
+        user = await bot.fetch_user(userid)
+        message = message + f'- **{user}** `{user.id}`\n'
     
     embed = discord.Embed(title=f'Punished Users', description=message, color=defaultColour)
 
@@ -573,28 +537,15 @@ async def suggest(ctx):
 @commands.cooldown(5, 3600, commands.BucketType.user) # The command can only be used 5 times in 3600 seconds
 async def suggest(ctx, user, reason):
     
-    with open('./dunce.json', 'r') as f:
-        data = json.load(f)
-    
-    found = False
-    for i in data:
-        if i['user'] == user.id:
-            found = True
-            break
-    
-    if found:
+    if await dunce_status(user.id):
         await ctx.respond('Den här spelaren är redan placerad i skamvrån!')
     
     else:
         
-        newData = {"user": user.id, "reason": reason}
-        data.append(newData)
-
-        with open('./dunce.json', 'w') as f:
-            json.dump(data, f, indent=4)
+        change_dunce(user.id, new_value=True)
 
         channel = bot.get_channel(settings['channels']['dunce-logs'])
-        await channel.send(f'**{ctx.author}** placerade **{user}** i skamvrån pågrund av **{reason}**.\n||**{ctx.author.id}** placerade **{user.id}** i skamvrån pågrund av **{reason}**||')
+        await channel.send(f'**{ctx.author}** `{ctx.author.id}` placerade **{user}** `{user}` i skamvrån pågrund.')
         
         await ctx.respond('Jag placerade den här spelaren i skamvrån!', ephemeral=True)
 
@@ -605,31 +556,17 @@ async def suggest(ctx, user, reason):
 @commands.cooldown(5, 3600, commands.BucketType.user) # The command can only be used 5 times in 3600 seconds
 async def suggest(ctx, user):
     
-    with open('./dunce.json', 'r') as f:
-        data = json.load(f)
-    
-    found = False
-    index = 0
-    for i in data:
-        if i['user'] == user.id:
-            found = True
-            break
-        index += 1
-    
-    if not found:
+    if not await dunce_status(user.id):
         await ctx.respond('Den här spelaren är inte placerad i skamvrån!')
     
     else:
         
-        data.pop(index)
-
-        with open('./dunce.json', 'w') as f:
-            json.dump(data, f, indent=4)
+        change_dunce(user.id, new_value=False)
         
         await ctx.respond('Jag tog ut spelaren ur skamvrån!', ephemeral=True)
 
         channel = bot.get_channel(settings['channels']['dunce-logs'])
-        await channel.send(f'**{ctx.author}** tog ut **{user}** ur skamvrån.\n||**{ctx.author.id}** tog ut **{user.id}** ur skamvrån.||')
+        await channel.send(f'**{ctx.author}** `{ctx.author.id}` tog ut **{user}** `{user}` ur skamvrån.')
 
         await sync_command(user.id)
 
@@ -653,7 +590,7 @@ async def getCards(ctx: discord.AutocompleteContext):
 @option("card", description="Name of the card", required=True, autocomplete=discord.utils.basic_autocomplete(getCards))
 async def trade_addcard(ctx, card):
 
-    if not check_linked(ctx.author.id):
+    if not await is_linked_discord(ctx.author.id):
         embed = discord.Embed(description=f'{slashcmd_emoji} Du har inte länkat ditt konto, länka ditt konto innan du försöker handla!', color=redColour)
         await ctx.respond(embed=embed)
     
@@ -736,7 +673,7 @@ async def trade_addcard(ctx, card):
 @option("card", description="Name of the card", required=True, autocomplete=discord.utils.basic_autocomplete(getCards))
 async def trade_removecard(ctx, card):
 
-    if not check_linked(ctx.author.id):
+    if not await is_linked_discord(ctx.author.id):
         embed = discord.Embed(description=f'{slashcmd_emoji} Du har inte länkat ditt konto, länka ditt konto innan du försöker handla!', color=redColour)
         await ctx.respond(embed=embed)
     
@@ -792,7 +729,7 @@ async def trade_removecard(ctx, card):
 @trade.command(name="list", description='View your cards that you have trade notifications for')
 async def trade_list(ctx):
 
-    if not check_linked(ctx.author.id):
+    if not await is_linked_discord(ctx.author.id):
         embed = discord.Embed(description=f'{slashcmd_emoji} Du har inte länkat ditt konto, länka ditt konto innan du försöker handla!', color=redColour)
         await ctx.respond(embed=embed)
     
@@ -890,7 +827,7 @@ def duplicatesInList(list):
 @commands.cooldown(3, 6000, commands.BucketType.user) # The command can only be used 5 times in 6000 seconds
 async def trade_create(ctx, request, offer_1=None, offer_2=None, offer_3=None, offer_4=None):
 
-    if not check_linked(ctx.author.id):
+    if not await is_linked_discord(ctx.author.id):
         embed = discord.Embed(description=f'{slashcmd_emoji} Du har inte länkat ditt konto, länka ditt konto innan du försöker handla!', color=redColour)
         await ctx.respond(embed=embed)
     
@@ -971,10 +908,7 @@ async def trade_create(ctx, request, offer_1=None, offer_2=None, offer_3=None, o
             cardsToGiveStr = cardsToGiveStr[:len(cardsToGiveStr) - 2]
 
             # Get the authors current clan
-            with open(settings['linked-accounts-path'], 'r') as f:
-                response = json.load(f)
-            
-            tag = response[str(ctx.author.id)]
+            tag = await get_tag(ctx.author.id)
 
             async with aiohttp.ClientSession() as cs:
                 async with cs.get(f'https://proxy.royaleapi.dev/v1/players/%23{tag}', headers=api) as data:
@@ -1211,14 +1145,7 @@ async def disqualify_remove(ctx, user):
 @option("user", discord.User, description="The user to target.", required=True)
 async def royaleapi(ctx, user):
 
-
-    with open(settings['linked-accounts-path'], 'r') as f:
-        response = json.load(f)
-    
-    try:
-        tag = response[str(user.id)]
-    except:
-        tag = None
+    tag = await get_tag(user.id)
     
     if tag is None:
         embed = discord.Embed(description='That user has not linked their account yet!', color=defaultColour)
@@ -1399,10 +1326,9 @@ async def syncall():
         for member in guild.members:
             member_list.append(str(member.id))
 
-    with open(settings['linked-accounts-path'], 'r') as f:
-        response = json.load(f)
+    linked_users = await all_linked_users()
 
-    for userid in response:
+    for userid in linked_users:
         if str(userid) in member_list:
             await sync_command(userid)
             await asyncio.sleep(5)
