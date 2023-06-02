@@ -186,7 +186,7 @@ async def on_message(message):
                 # Unlink the account from the database
                 await remove_user(message.author.id)
 
-                embed = discord.Embed(description=f'<@{message.author.id}> Ditt konto är nu länkat! Välkommen in!', color=greenColour)
+                embed = discord.Embed(description=f'<@{message.author.id}> Klart! Nu kan du länka ett nytt konto', color=greenColour)
                 embed_message = await channel.send(embed=embed)
                 await message.delete()
                 await asyncio.sleep(10)
