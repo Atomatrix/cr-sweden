@@ -356,7 +356,7 @@ async def sync_command(userid):
 
 
                 # GIVE OTHER CLAN ROLES
-
+                clan_family_role_given = None
                 for clan_family in other_clans:
 
                     for clanid in clan_family['clans']:
@@ -366,19 +366,22 @@ async def sync_command(userid):
                             if clan_family['member-role'] not in [r.id for r in user.roles]:
                                 role = discord.utils.get(user.guild.roles, id=clan_family['member-role'])
                                 await user.add_roles(role)
-
-                            temp_list = clan_member_id_list # Make templist, it includes all clan member role ID's except that clan
-                            temp_list.remove(clan_family['member-role']) # Remove clan member role from the list
-
-                            for a in temp_list: # For every clan member role, remove it from the user if them have it
-                                if a in [r.id for r in user.roles]:
-                                    await user.remove_roles(discord.utils.get(user.guild.roles, id=a))
-
+                                clan_family_role_given = clan_family['member-role']
+                            
                             break
 
+                # REMOVE OTHER CLAN ROLES
+                temp_list = clan_member_id_list # Make templist, it includes all clan member role ID's except that clan
+
+                if clan_family_role_given is not None:
+                    temp_list.remove(clan_family_role_given) # Remove clan member role from the list
+
+                for a in temp_list: # For every clan member role, remove it from the user if them have it
+                    if a in [r.id for r in user.roles]:
+                        await user.remove_roles(discord.utils.get(user.guild.roles, id=a))
+  
 
                 # KING LEVEL SYNC
-
                 kinglevels = list(settings['roles']['clans']['king-level'].keys())
 
                 for i in kinglevels:
