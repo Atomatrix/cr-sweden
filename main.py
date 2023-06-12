@@ -366,7 +366,7 @@ async def sync_command(userid):
                             if clan_family['member-role'] not in [r.id for r in user.roles]:
                                 role = discord.utils.get(user.guild.roles, id=clan_family['member-role'])
                                 await user.add_roles(role)
-                                clan_family_role_given = clan_family['member-role']
+                            clan_family_role_given = clan_family['member-role']
                             
                             break
 
