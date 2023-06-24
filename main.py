@@ -14,6 +14,7 @@ import re
 import random, string
 import datetime
 import dateutil.parser as dp
+import urllib.request
 
 # Import local utilities for database management
 from database_utils import *
@@ -93,6 +94,8 @@ async def on_ready():
     syncall.start()
 
     checkTournamentWinners.start()
+
+    change_banner.start()
 
     print(f'Bot v{bot_version} loaded as "{bot.user}"')
 
@@ -1322,6 +1325,42 @@ async def clan_deleteclan(ctx, family_id, clan_id):
         await ctx.respond(embed=embed, ephemeral=True)
 
 
+@tasks.loop(hours=24)
+async def change_banner():
+
+    async with aiohttp.ClientSession() as cs:
+        async with cs.get(f'https://thomaskeig.com/api/crs/banners.json', headers=api) as data:
+            bannerlist = await data.json()
+    
+    url = random.choice(bannerlist)
+
+    with urllib.request.urlopen(url) as response:
+        byte_data = response.read()
+
+    server = bot.get_guild(settings['servers']['main'])
+    await server.edit(banner=byte_data)
+
+    channel = bot.get_channel(settings['channels']['banner-logs'])
+
+    embed = discord.Embed(title='The banner has changed!')
+    embed.set_image(url=url)
+
+    await channel.send(embed=embed)
+
+@change_banner.before_loop
+async def wait_until_autobackup():
+    now = datetime.datetime.now().astimezone()
+    next_run = now.replace(
+        hour=6,
+        minute=0,
+        second=0
+        )
+    if next_run < now:
+        next_run += datetime.timedelta(days=1)
+    await discord.utils.sleep_until(next_run)
+
+
+
 
 @tasks.loop(minutes=60)
 async def syncall():
@@ -1350,6 +1389,5 @@ async def on_application_command_error(
         await ctx.respond(f'Du behöver vänta {round(error.retry_after, 2)} sekunder innan du kan använda det här kommandot igen.', ephemeral=True)
     else:
         raise error  # Raise other errors so they aren't ignored
-
 
 bot.run(settings['bot-token'])

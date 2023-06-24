@@ -22,6 +22,7 @@ channels:
   sync-logs: 0
   bot-logs: 0
   dunce-logs: 0
+  banner-logs: 0
 
   suggestions: 0
 
