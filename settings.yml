@@ -1,14 +1,14 @@
 # API Key to connect with developer.clashroyale.com
-api-key: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiIsImtpZCI6IjI4YTMxOGY3LTAwMDAtYTFlYi03ZmExLTJjNzQzM2M2Y2NhNSJ9.eyJpc3MiOiJzdXBlcmNlbGwiLCJhdWQiOiJzdXBlcmNlbGw6Z2FtZWFwaSIsImp0aSI6ImY5YzY0Y2VkLTViNWQtNGRhOS1hOTUxLTg4ZTFmMGNhOGMwMCIsImlhdCI6MTY2OTU2NjQ3OSwic3ViIjoiZGV2ZWxvcGVyLzQzMjc1ZDMyLThjY2YtN2VkNy0xMDczLWFiY2M0YjlmZjVmMCIsInNjb3BlcyI6WyJyb3lhbGUiXSwibGltaXRzIjpbeyJ0aWVyIjoiZGV2ZWxvcGVyL3NpbHZlciIsInR5cGUiOiJ0aHJvdHRsaW5nIn0seyJjaWRycyI6WyI0NS43OS4yMTguNzkiXSwidHlwZSI6ImNsaWVudCJ9XX0.ow9zBeautKgc8oPFw4_RAXDbMjNNfp2O8HTMJ9Jc8G3jhFjisLlve9xj_pQE3OPYhH3hGf4PSxvqtWWpcATPhg
+api-key: XXXXXXXXXXXXXXXXXXXXXX
 
 # Discord Bot Token
-bot-token: MTA0NjQ0ODExMzk0NDExNzQ1OA.G86iQu.yEy5Wau2md4nC5HIVkuXl3Blbp7jcPwHDjZxPI
+bot-token: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 # Settings to manage MongoDB
 mongodb:
-  database-name: 'crs.z0d56bb'
-  username: 'bot'
-  password: 'pJydMokoYAh7IJ85'
+  database-name: ''
+  username: ''
+  password: ''
 
 link-channel-ignored-ids:
   - 1083857317503705150 # Sapphire Bot
