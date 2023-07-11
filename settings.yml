@@ -1,71 +1,77 @@
 # API Key to connect with developer.clashroyale.com
-api-key: ABCD
+api-key: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiIsImtpZCI6IjI4YTMxOGY3LTAwMDAtYTFlYi03ZmExLTJjNzQzM2M2Y2NhNSJ9.eyJpc3MiOiJzdXBlcmNlbGwiLCJhdWQiOiJzdXBlcmNlbGw6Z2FtZWFwaSIsImp0aSI6ImY5YzY0Y2VkLTViNWQtNGRhOS1hOTUxLTg4ZTFmMGNhOGMwMCIsImlhdCI6MTY2OTU2NjQ3OSwic3ViIjoiZGV2ZWxvcGVyLzQzMjc1ZDMyLThjY2YtN2VkNy0xMDczLWFiY2M0YjlmZjVmMCIsInNjb3BlcyI6WyJyb3lhbGUiXSwibGltaXRzIjpbeyJ0aWVyIjoiZGV2ZWxvcGVyL3NpbHZlciIsInR5cGUiOiJ0aHJvdHRsaW5nIn0seyJjaWRycyI6WyI0NS43OS4yMTguNzkiXSwidHlwZSI6ImNsaWVudCJ9XX0.ow9zBeautKgc8oPFw4_RAXDbMjNNfp2O8HTMJ9Jc8G3jhFjisLlve9xj_pQE3OPYhH3hGf4PSxvqtWWpcATPhg
 
 # Discord Bot Token
-bot-token: ABCD
+bot-token: MTA0NjQ0ODExMzk0NDExNzQ1OA.G86iQu.yEy5Wau2md4nC5HIVkuXl3Blbp7jcPwHDjZxPI
 
 # Settings to manage MongoDB
 mongodb:
-  database-name: 'name.abcdef'
-  username: 'username'
-  password: 'password'
+  database-name: 'crs.z0d56bb'
+  username: 'bot'
+  password: 'pJydMokoYAh7IJ85'
 
 link-channel-ignored-ids:
-  - 0
+  - 1083857317503705150 # Sapphire Bot
+  - 282548554285711370 # itaggg
+  - 762276652683362304
+  - 356134549966684160
+  - 934908330483273818
+  - 824908378673250331
+  - 275214503992360961
   
 servers:
-  main: 0
-  emoji: 0
+  main: 1045029146209820713
+  emoji: 870361457701818409
 
 channels:
-  link: 0
-  sync-logs: 0
-  bot-logs: 0
-  dunce-logs: 0
-  banner-logs: 0
+  link: 1046453503465373807
+  sync-logs: 1046453553440501901
+  bot-logs: 1046453552077352980
+  dunce-logs: 1046541357650563182
+  banner-logs: 1122133733709991966
 
-  suggestions: 0
+  suggestions: 1046523386274263071
 
 roles:
   utility:
-    ignore-nickname-change: 0
-    dunce: 0
-    accepted-tournament-rules: 0
-    disqualified: 0
+    ignore-nickname-change: 1046453482510622800
+    dunce: 1046534739072385184
+    accepted-tournament-rules: 1094987394119372942
+    disqualified: 1046453483932483584
     
   clans:
     basic:
-      account-linked: 0
-      temporary: 0
-      wick-verified: 0
+      account-linked: 1046455928318349333
+      temporary: 1083885046554964079
+      wick-verified: 1082963988658278410
 
 
     
-    leader: 0
-    coleader: 0
-    elder: 0
-    member: 0
+    leader: 1049024116017082459
+    coleader: 1082965111108542474
+    elder: 1090387540701352126
+    member: 1090387555809239204
     
     king-level:
-      1: 0
-      10: 0
-      14: 0
-      18: 0
-      22: 0
-      26: 0
-      30: 0
-      34: 0
-      38: 0
-      42: 0
-      46: 0
-      50: 0
-      54: 0
-      58: 0
-      62: 0 
-      66: 0
-      70: 0
+      1: 1046453459060281404
+      10: 1046453458032676894
+      14: 1046453456711450745
+      18: 1046453455331532850
+      22: 1046453454090014772
+      26: 1046453453192441968
+      30: 1046453452252925972
+      34: 1046453451103666379
+      38: 1046453450189316136
+      42: 1046453448813592597
+      46: 1046453447509168228
+      50: 1046453446427021322
+      54: 1119668734391496837
+      58: 1119668742352277525
+      62: 1119668743849656330
+      66: 1119668753534292058
+      70: 1119668756105396274
 
 trades:
   max-cards: 15
-  incoming-trades: 0
-  trade-clan-id: ABCDEFG
+  incoming-trades: 1049101636330594325
+  trade-clan-id: QRPQP0RV
