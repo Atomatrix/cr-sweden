@@ -525,7 +525,7 @@ async def suggest(ctx, suggestion):
 
 @punishment.command(name="list", description='List all users who have been punished')
 @commands.cooldown(3, 15, commands.BucketType.user) # The command can only be used 3 times in 15 seconds
-async def suggest(ctx):
+async def punishment_list(ctx):
     
     message = ''
 
@@ -1324,10 +1324,18 @@ async def clan_deleteclan(ctx, family_id, clan_id):
         embed = discord.Embed(description=f'The clan family **{family_id}** was not found.', color=redColour)
         await ctx.respond(embed=embed, ephemeral=True)
 
+@bot.command(name="changebanner", description='Change the server banner to another piece of random art.')
+@commands.cooldown(1, 3600, commands.BucketType.user) # The command can only be used once per hour
+async def changebanner(ctx):
 
-@tasks.loop(hours=24)
-async def change_banner():
+    await ctx.defer(ephemeral=True)
 
+    await change_to_random_banner()
+
+    embed = discord.Embed(description=f'Successfully changed the server banner', color=greenColour)
+    await ctx.respond(embed=embed, ephemeral=True)
+
+async def change_to_random_banner():
     async with aiohttp.ClientSession() as cs:
         async with cs.get(f'https://thomaskeig.com/api/crs/banners.json', headers=api) as data:
             bannerlist = await data.json()
@@ -1347,6 +1355,10 @@ async def change_banner():
 
     await channel.send(embed=embed)
 
+@tasks.loop(hours=24)
+async def change_banner():
+    await change_to_random_banner()
+
 @change_banner.before_loop
 async def wait_until_autobackup():
     now = datetime.datetime.now().astimezone()
@@ -1358,9 +1370,6 @@ async def wait_until_autobackup():
     if next_run < now:
         next_run += datetime.timedelta(days=1)
     await discord.utils.sleep_until(next_run)
-
-
-
 
 @tasks.loop(minutes=60)
 async def syncall():
@@ -1379,7 +1388,6 @@ async def syncall():
     channel = bot.get_channel(settings['channels']['sync-logs'])
     embed = discord.Embed(description=f'Jag har genomfört en synk på alla medlemmars roller!', color=greenColour)
     await channel.send(embed=embed)
-
 
 @bot.event
 async def on_application_command_error(
