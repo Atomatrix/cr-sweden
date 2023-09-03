@@ -175,127 +175,123 @@ async def on_message(message):
 
         channel = bot.get_channel(message.channel.id)
 
-        if message_content.lower() == 'unlink': # If they attempt to unlink their account
-
-            if not await is_linked_discord(message.author.id):
-                embed = discord.Embed(description=f'<@{message.author.id}> Du har inte länkat ditt konto, därför kan du inte unlinka det!', color=redColour)
-                embed_message = await channel.send(embed=embed)
-                await message.delete() # Delete original message
-                await asyncio.sleep(10) # Wait 10 sec
-                await embed_message.delete() # Delete embed message
-            
-            else:
-                
-                # Unlink the account from the database
-                await remove_user(message.author.id)
-
-                embed = discord.Embed(description=f'<@{message.author.id}> Klart! Nu kan du länka ett nytt konto', color=greenColour)
-                embed_message = await channel.send(embed=embed)
-                await message.delete()
-                await asyncio.sleep(10)
-                await embed_message.delete()
-
-                with open('./data/otherClans.json', 'r') as f:
-                    other_clans = json.load(f)
-
-                for i in other_clans:
-                    if i['member-role'] in [r.id for r in message.author.roles]:
-                        await message.author.remove_roles(discord.utils.get(message.author.guild.roles, id=i['member-role']))
-
-                # King level - Remove Roles
-                for i in list(settings['roles']['clans']['king-level'].values()):
-                    if i in [r.id for r in message.author.roles]:
-                        await message.author.remove_roles(discord.utils.get(message.author.guild.roles, id=i))
-
-                # Remove Linked account role
-                if settings['roles']['clans']['basic']['account-linked'] in [r.id for r in message.author.roles]:
-                    await message.author.remove_roles(discord.utils.get(message.author.guild.roles, id=settings['roles']['clans']['basic']['account-linked']))
-
-                # Give temporary role
-                if settings['roles']['clans']['basic']['temporary'] not in [r.id for r in message.author.roles]:
-                    await message.author.add_roles(discord.utils.get(message.author.guild.roles, id=settings['roles']['clans']['basic']['temporary']))
-
-                await log(
-                        message = f'<@{message.author.id}> har unlinkat sitt konto!',
-                        colour = greenColour
-                    )
+        if await is_linked_discord(message.author.id):
+            embed = discord.Embed(description=f'<@{message.author.id}> Du har redan länkat ett konto! Ta bort länken genom att använda kommandot `/unlink`!', color=redColour)
+            embed_message = await channel.send(embed=embed)
+            await message.delete()
+            await asyncio.sleep(10)
+            await embed_message.delete()
 
         else:
-
-            if await is_linked_discord(message.author.id):
-                embed = discord.Embed(description=f'<@{message.author.id}> Du har redan länkat ett konto! Unlinka det genom att skriva `unlink` i den här kanalen!', color=redColour)
+            if len(message_content) > 15:
+                embed = discord.Embed(description=f'<@{message.author.id}> Det där ser inte ut som en Clash Royale #tag, dubbelkolla så att du skrivit rätt eller be om hjälp!', color=redColour)
                 embed_message = await channel.send(embed=embed)
                 await message.delete()
                 await asyncio.sleep(10)
                 await embed_message.delete()
+            
+            tag = message_content.replace('#', '')
 
+            if await is_linked_cr(tag): # Check if the tag already linked
+                embed = discord.Embed(description=f'<@{message.author.id}> #tag är redan i använding. Vänligen länka ditt egna konto!', color=redColour)
+                embed_message = await channel.send(embed=embed)
+                await message.delete()
+                await asyncio.sleep(10)
+                await embed_message.delete()
+            
             else:
-                if len(message_content) > 15:
-                    embed = discord.Embed(description=f'<@{message.author.id}> Det där ser inte ut som en Clash Royale #tag, dubbelkolla så att du skrivit rätt eller be om hjälp!', color=redColour)
-                    embed_message = await channel.send(embed=embed)
-                    await message.delete()
-                    await asyncio.sleep(10)
-                    await embed_message.delete()
-                
-                tag = message_content.replace('#', '')
 
-                if await is_linked_cr(tag): # Check if the tag already linked
-                    embed = discord.Embed(description=f'<@{message.author.id}> #tag är redan i använding. Vänligen länka ditt egna konto!', color=redColour)
-                    embed_message = await channel.send(embed=embed)
-                    await message.delete()
-                    await asyncio.sleep(10)
-                    await embed_message.delete()
-                
-                else:
+                async with aiohttp.ClientSession() as cs:
+                    async with cs.get(f'https://proxy.royaleapi.dev/v1/players/%23{tag}', headers=api) as data:
+                        
+                        if data.status == 403:
+                            embed = discord.Embed(description=f'<@{message.author.id}> Ett internt problem har skett. API\'n tillåter inte tillgången till den här serverns IP.', color=redColour)
+                            embed_message = await channel.send(embed=embed)
+                            await message.delete()
+                            await asyncio.sleep(10)
+                            await embed_message.delete()
 
-                    async with aiohttp.ClientSession() as cs:
-                        async with cs.get(f'https://proxy.royaleapi.dev/v1/players/%23{tag}', headers=api) as data:
+                        elif data.status == 404:
+                            embed = discord.Embed(description=f'<@{message.author.id}> Jag hittar inte det där kontot. Se till att du skrivit rätt #tag!', color=redColour)
+                            embed_message = await channel.send(embed=embed)
+                            await message.delete()
+                            await asyncio.sleep(10)
+                            await embed_message.delete()
+                        
+                        elif data.status != 200:
+                            embed = discord.Embed(description=f'<@{message.author.id}> Ett okänt internt problem har inträffat. Ber om ursäkt för det! Vänligen kontakta en Administratör för hjälp! (Error {data.status})', color=redColour)
+                            embed_message = await channel.send(embed=embed)
+                            await message.delete()
+                            await asyncio.sleep(10)
+                            await embed_message.delete()
+
+                        else: # data.status == 200
+
+                            profile = await data.json()
+
+                            official_tag = profile['tag'].replace('#', '')
+                            official_name = profile['name']
                             
-                            if data.status == 403:
-                                embed = discord.Embed(description=f'<@{message.author.id}> Ett internt problem har skett. API\'n tillåter inte tillgången till den här serverns IP.', color=redColour)
-                                embed_message = await channel.send(embed=embed)
-                                await message.delete()
-                                await asyncio.sleep(10)
-                                await embed_message.delete()
+                            # Link the account in the database
+                            await add_user(discordid=message.author.id, cr_tag=official_tag)
 
-                            elif data.status == 404:
-                                embed = discord.Embed(description=f'<@{message.author.id}> Jag hittar inte det där kontot. Se till att du skrivit rätt #tag!', color=redColour)
-                                embed_message = await channel.send(embed=embed)
-                                await message.delete()
-                                await asyncio.sleep(10)
-                                await embed_message.delete()
-                            
-                            elif data.status != 200:
-                                embed = discord.Embed(description=f'<@{message.author.id}> Ett okänt internt problem har inträffat. Ber om ursäkt för det! Vänligen kontakta en Administratör för hjälp! (Error {data.status})', color=redColour)
-                                embed_message = await channel.send(embed=embed)
-                                await message.delete()
-                                await asyncio.sleep(10)
-                                await embed_message.delete()
+                            embed = discord.Embed(description=f'<@{message.author.id}> har länkat sitt konto till "{official_name}" `#{official_tag}`', color=greenColour)
+                            embed_message = await channel.send(embed=embed)
+                            await message.delete()
 
-                            else: # data.status == 200
+                            await sync_command(message.author.id)
 
-                                profile = await data.json()
+                            await asyncio.sleep(10)
+                            await embed_message.delete()
 
-                                official_tag = profile['tag'].replace('#', '')
-                                official_name = profile['name']
-                                
-                                # Link the account in the database
-                                await add_user(discordid=message.author.id, cr_tag=official_tag)
+                            await log(
+                                message = f'<@{message.author.id}> har länkat sitt konto till "{official_name}" `#{official_tag}`',
+                                colour = greenColour
+                            )
 
-                                embed = discord.Embed(description=f'<@{message.author.id}> har länkat sitt konto till "{official_name}" `#{official_tag}`', color=greenColour)
-                                embed_message = await channel.send(embed=embed)
-                                await message.delete()
+@bot.command(name="unlink", description='Unlink your Clash Royale account from your Discord Account.')
+@commands.cooldown(3, 30, commands.BucketType.user)
+async def unlink(ctx):
+    await ctx.defer(ephemeral=True)
 
-                                await sync_command(message.author.id)
+    if not await is_linked_discord(ctx.author.id):
 
-                                await asyncio.sleep(10)
-                                await embed_message.delete()
-
-                                await log(
-                                    message = f'<@{message.author.id}> har länkat sitt konto till "{official_name}" `#{official_tag}`',
-                                    colour = greenColour
-                                )
+        embed = discord.Embed(description=f'Du har inte länkat ditt konto, därför kan du inte unlinka det!', color=redColour)
+        await ctx.send(embed=embed, ephemeral=True)
     
+    else:
+        
+        # Unlink the account from the database
+        await remove_user(ctx.author.id)
+
+        embed = discord.Embed(description=f'Klart! Nu kan du länka ett nytt konto', color=greenColour)
+        await ctx.send(embed=embed, ephemeral=True)
+
+        with open('./data/otherClans.json', 'r') as f:
+            other_clans = json.load(f)
+
+        for i in other_clans:
+            if i['member-role'] in [r.id for r in ctx.author.roles]:
+                await ctx.author.remove_roles(discord.utils.get(ctx.author.guild.roles, id=i['member-role']))
+
+        # King level - Remove Roles
+        for i in list(settings['roles']['clans']['king-level'].values()):
+            if i in [r.id for r in ctx.author.roles]:
+                await ctx.author.remove_roles(discord.utils.get(ctx.author.guild.roles, id=i))
+
+        # Remove Linked account role
+        if settings['roles']['clans']['basic']['account-linked'] in [r.id for r in ctx.author.roles]:
+            await ctx.author.remove_roles(discord.utils.get(ctx.author.guild.roles, id=settings['roles']['clans']['basic']['account-linked']))
+
+        # Give temporary role
+        if settings['roles']['clans']['basic']['temporary'] not in [r.id for r in ctx.author.roles]:
+            await ctx.author.add_roles(discord.utils.get(ctx.author.guild.roles, id=settings['roles']['clans']['basic']['temporary']))
+
+        await log(
+                message = f'<@{ctx.author.id}> har unlinkat sitt konto!',
+                colour = greenColour
+            )
+                
 def remove_all_values_from_list(the_list, val):
    return [value for value in the_list if value != val]
 
@@ -498,6 +494,8 @@ async def reload(ctx):
 @bot.command(name='forcesync', description = 'Force a sync on any user')
 @option("user", discord.User, description="The user to force sync.", required=True)
 async def forcesync(ctx, user:discord.user):
+
+    await ctx.defer()
 
     await sync_command(user.id)
     embed = discord.Embed(description=f'{tick_emoji} Synkade rollerna åt {user}', color=greenColour)
