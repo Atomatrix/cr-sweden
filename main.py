@@ -1,5 +1,3 @@
-bot_version = '1.0.0'
-
 from pydoc import describe
 import discord
 from discord import option
@@ -89,15 +87,13 @@ async def on_ready():
     # Change presence
     server = bot.get_guild(settings['servers']['main'])
     serverName = remove_emojis(server.name)
-    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name=f'för CRS | v{bot_version}'))
+    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name=f'för CRS | crsweden.com'))
 
-    syncall.start()
+    syncall.start() # Start syncing all users automatically
+    checkTournamentWinners.start() # Start checking tournaments for ending and winners
+    change_banner.start() # Start changing the banner every 24 hours
 
-    checkTournamentWinners.start()
-
-    change_banner.start()
-
-    print(f'Bot v{bot_version} loaded as "{bot.user}"')
+    print(f'Bot loaded as "{bot.user}"')
 
 @bot.event
 async def on_member_join(member):
@@ -267,12 +263,22 @@ async def unlink(ctx):
         embed = discord.Embed(description=f'Klart! Nu kan du länka ett nytt konto', color=greenColour)
         await ctx.send(embed=embed, ephemeral=True)
 
+        # Remove other clan roles
         with open('./data/otherClans.json', 'r') as f:
             other_clans = json.load(f)
 
         for i in other_clans:
-            if i['member-role'] in [r.id for r in ctx.author.roles]:
-                await ctx.author.remove_roles(discord.utils.get(ctx.author.guild.roles, id=i['member-role']))
+            if i['roles']['member'] in [r.id for r in ctx.author.roles]:
+                await ctx.author.remove_roles(discord.utils.get(ctx.author.guild.roles, id=i['roles']['member']))
+
+            if i['roles']['elder'] in [r.id for r in ctx.author.roles]:
+                await ctx.author.remove_roles(discord.utils.get(ctx.author.guild.roles, id=i['roles']['elder']))
+
+            if i['roles']['coleader'] in [r.id for r in ctx.author.roles]:
+                await ctx.author.remove_roles(discord.utils.get(ctx.author.guild.roles, id=i['roles']['coleader']))
+
+            if i['roles']['leader'] in [r.id for r in ctx.author.roles]:
+                await ctx.author.remove_roles(discord.utils.get(ctx.author.guild.roles, id=i['roles']['leader']))
 
         # King level - Remove Roles
         for i in list(settings['roles']['clans']['king-level'].values()):
@@ -351,31 +357,57 @@ async def sync_command(userid):
                     other_clans = json.load(f)
                 
                 for i in other_clans:
-                    clan_member_id_list.append(i['member-role'])
+                    clan_member_id_list.append(i['roles']['member'])
+                    clan_member_id_list.append(i['roles']['elder'])
+                    clan_member_id_list.append(i['roles']['coleader'])
+                    clan_member_id_list.append(i['roles']['leader'])
 
 
                 # GIVE OTHER CLAN ROLES
-                clan_family_role_given = None
+                clan_family_roles_given = []
                 for clan_family in other_clans:
 
                     for clanid in clan_family['clans']:
 
                         if clan_tag == ('#' + clanid):
                             
-                            if clan_family['member-role'] not in [r.id for r in user.roles]:
-                                role = discord.utils.get(user.guild.roles, id=clan_family['member-role'])
+                            # Add MEMBER role if they don't have it
+                            if clan_family['roles']['member'] not in [r.id for r in user.roles]:
+                                role = discord.utils.get(user.guild.roles, id=clan_family['roles']['member'])
                                 await user.add_roles(role)
-                            clan_family_role_given = clan_family['member-role']
+                            clan_family_roles_given.append(clan_family['roles']['member'])
+                            
+                            # Add ELDER role if they need it but don't have it
+                            if clan_family['roles']['elder'] is not None: # Check one is defined
+                                if gameRole == 'elder':
+                                    if clan_family['roles']['elder'] not in [r.id for r in user.roles]:
+                                        role = discord.utils.get(user.guild.roles, id=clan_family['roles']['elder'])
+                                        await user.add_roles(role)
+                                    clan_family_roles_given.append(clan_family['roles']['elder'])
+
+                            # Add COLEADER role if they need it but don't have it
+                            if clan_family['roles']['coleader'] is not None: # Check one is defined
+                                if gameRole == 'coLeader':
+                                    if clan_family['roles']['coleader'] not in [r.id for r in user.roles]:
+                                        role = discord.utils.get(user.guild.roles, id=clan_family['roles']['coleader'])
+                                        await user.add_roles(role)
+                                    clan_family_roles_given.append(clan_family['roles']['coleader'])
+
+                            # Add LEADER role if they need it but don't have it
+                            if clan_family['roles']['leader'] is not None: # Check one is defined
+                                if gameRole == 'leader':
+                                    if clan_family['roles']['leader'] not in [r.id for r in user.roles]:
+                                        role = discord.utils.get(user.guild.roles, id=clan_family['roles']['leader'])
+                                        await user.add_roles(role)
+                                    clan_family_roles_given.append(clan_family['roles']['leader'])
                             
                             break
 
                 # REMOVE OTHER CLAN ROLES
-                temp_list = clan_member_id_list # Make templist, it includes all clan member role ID's except that clan
+                # Remove items from list1 that appear in list2
+                clan_member_id_list = [item for item in clan_member_id_list if item not in clan_family_roles_given]
 
-                if clan_family_role_given is not None:
-                    temp_list.remove(clan_family_role_given) # Remove clan member role from the list
-
-                for a in temp_list: # For every clan member role, remove it from the user if them have it
+                for a in clan_member_id_list: # For every clan member role, remove it from the user if them have it
                     if a in [r.id for r in user.roles]:
                         await user.remove_roles(discord.utils.get(user.guild.roles, id=a))
   
@@ -1181,7 +1213,27 @@ async def clan_list(ctx):
         else:
             clanList = clanList[:-2] # Remove last two chars
 
-        description = description + f'<:ClashRoyaleDot:1022857029930459156> __**{clan["id"]}**__\n**Role:** <@&{clan["member-role"]}>\n**Clans:** {clanList}\n\n'
+        if clan["roles"]["member"] is None:
+            member_role_mention = '**N/A**'
+        else:
+            member_role_mention = f'<@&{clan["roles"]["member"]}>'
+
+        if clan["roles"]["elder"] is None:
+            elder_role_mention = '**N/A**'
+        else:
+            elder_role_mention = f'<@&{clan["roles"]["elder"]}>'
+
+        if clan["roles"]["coleader"] is None:
+            coleader_role_mention = '**N/A**'
+        else:
+            coleader_role_mention = f'<@&{clan["roles"]["coleader"]}>'
+
+        if clan["roles"]["leader"] is None:
+            leader_role_mention = '**N/A**'
+        else:
+            leader_role_mention = f'<@&{clan["roles"]["leader"]}>'
+
+        description = description + f'- __**{clan["id"]}**__\n - **Roles:** {member_role_mention}, {elder_role_mention}, {coleader_role_mention}, {leader_role_mention}\n - **Clans:** {clanList}\n\n'
     
     embed = discord.Embed(title='Clan Roles', description=description, color=defaultColour)
     embed.set_footer(text='If a member is in any of these clans, they will get the appropriate role.')
@@ -1191,9 +1243,12 @@ async def clan_list(ctx):
 @otherclan.command(name="addfamily", description='Create a new clan family')
 @option("id", description="Backend name for the clan family - Only use alphanumeric characters", required=True)
 @option("member_role", discord.Role, description="The role to give all members of the clan", required=True)
-async def clan_addfamily(ctx, id, member_role: discord.Role):
+@option("elder_role", discord.Role, description="The role to give all elders of the clan", required=False)
+@option("coleader_role", discord.Role, description="The role to give all co-leaders of the clan", required=False)
+@option("leader_role", discord.Role, description="The role to the leader of the clan", required=False)
+async def clan_addfamily(ctx, id, member_role: discord.Role, elder_role: discord.Role, coleader_role: discord.Role, leader_role: discord.Role,):
 
-    jsondata = {"id": id, "clans": [], "member-role": member_role.id}
+    jsondata = {"id": id, "clans": [], "roles": {"member": member_role.id, "elder": elder_role.id, "coleader": coleader_role.id, "leader": leader_role.id}}
 
     with open('./data/otherClans.json', 'r') as f:
         data = json.load(f)
