@@ -268,17 +268,11 @@ async def unlink(ctx):
             other_clans = json.load(f)
 
         for i in other_clans:
-            if i['roles']['member'] in [r.id for r in ctx.author.roles]:
-                await ctx.author.remove_roles(discord.utils.get(ctx.author.guild.roles, id=i['roles']['member']))
 
-            if i['roles']['elder'] in [r.id for r in ctx.author.roles]:
-                await ctx.author.remove_roles(discord.utils.get(ctx.author.guild.roles, id=i['roles']['elder']))
+            for roletype in ['member', 'elder', 'coleader', 'leader']:
 
-            if i['roles']['coleader'] in [r.id for r in ctx.author.roles]:
-                await ctx.author.remove_roles(discord.utils.get(ctx.author.guild.roles, id=i['roles']['coleader']))
-
-            if i['roles']['leader'] in [r.id for r in ctx.author.roles]:
-                await ctx.author.remove_roles(discord.utils.get(ctx.author.guild.roles, id=i['roles']['leader']))
+                if i['roles'][roletype] in [r.id for r in ctx.author.roles]:
+                    await ctx.author.remove_roles(discord.utils.get(ctx.author.guild.roles, id=i['roles'][roletype]))
 
         # King level - Remove Roles
         for i in list(settings['roles']['clans']['king-level'].values()):
