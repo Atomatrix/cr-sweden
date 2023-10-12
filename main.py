@@ -1267,7 +1267,7 @@ async def clan_addfamily(ctx, id, member_role: discord.Role, elder_role=None, co
     with open('./data/otherClans.json', 'w+') as f:
         json.dump(data, f, indent = 4)
     
-    embed = discord.Embed(title='Created Clan Family', description=f'<:ClashRoyaleDot:1022857029930459156> **Family ID:** {id}\n<:ClashRoyaleDot:1022857029930459156> **Role:** <@&{member_role.id}>', color=greenColour)
+    embed = discord.Embed(title='Created Clan Family', description=f'<:ClashRoyaleDot:1022857029930459156> **Family ID:** {id}\n<:ClashRoyaleDot:1022857029930459156> **Member Role:** <@&{member_role.id}>\n<:ClashRoyaleDot:1022857029930459156> **Elder Role:** <@&{elder_role_id}>\n<:ClashRoyaleDot:1022857029930459156> **Co-Leader Role:** <@&{coleader_role_id}>\n<:ClashRoyaleDot:1022857029930459156> **Leader Role:** <@&{leader_role_id}>', color=greenColour)
     await ctx.respond(embed=embed, ephemeral=True)
 
 
