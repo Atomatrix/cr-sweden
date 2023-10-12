@@ -275,9 +275,9 @@ async def unlink(ctx):
                     await ctx.author.remove_roles(discord.utils.get(ctx.author.guild.roles, id=i['roles'][roletype]))
 
         # King level - Remove Roles
-        for i in list(settings['roles']['clans']['king-level'].values()):
-            if i in [r.id for r in ctx.author.roles]:
-                await ctx.author.remove_roles(discord.utils.get(ctx.author.guild.roles, id=i))
+        # for i in list(settings['roles']['clans']['king-level'].values()):
+        #     if i in [r.id for r in ctx.author.roles]:
+        #         await ctx.author.remove_roles(discord.utils.get(ctx.author.guild.roles, id=i))
 
         # Remove Linked account role
         if settings['roles']['clans']['basic']['account-linked'] in [r.id for r in ctx.author.roles]:
@@ -407,26 +407,26 @@ async def sync_command(userid):
   
 
                 # KING LEVEL SYNC
-                kinglevels = list(settings['roles']['clans']['king-level'].keys())
+                # kinglevels = list(settings['roles']['clans']['king-level'].keys())
 
-                for i in kinglevels:
+                # for i in kinglevels:
                     
-                    if expLevel >= i:
-                        king_level_dropback = i
-                    else:
-                        break
+                #     if expLevel >= i:
+                #         king_level_dropback = i
+                #     else:
+                #         break
 
-                if settings['roles']['clans']['king-level'][king_level_dropback] not in [r.id for r in user.roles]: # If they dont have the role, give it to them
-                    await user.add_roles(discord.utils.get(user.guild.roles, id=settings['roles']['clans']['king-level'][king_level_dropback]))
+                # if settings['roles']['clans']['king-level'][king_level_dropback] not in [r.id for r in user.roles]: # If they dont have the role, give it to them
+                #     await user.add_roles(discord.utils.get(user.guild.roles, id=settings['roles']['clans']['king-level'][king_level_dropback]))
 
-                temp_list = [] # Temp list includes all king level roles except their one
-                for i in list(settings['roles']['clans']['king-level'].values()):
-                    if i != settings['roles']['clans']['king-level'][king_level_dropback]:
-                        temp_list.append(i)
+                # temp_list = [] # Temp list includes all king level roles except their one
+                # for i in list(settings['roles']['clans']['king-level'].values()):
+                #     if i != settings['roles']['clans']['king-level'][king_level_dropback]:
+                #         temp_list.append(i)
                 
-                for a in temp_list:
-                    if a in [r.id for r in user.roles]: # If they have the role, remove it from them
-                        await user.remove_roles(discord.utils.get(user.guild.roles, id=a))
+                # for a in temp_list:
+                #     if a in [r.id for r in user.roles]: # If they have the role, remove it from them
+                #         await user.remove_roles(discord.utils.get(user.guild.roles, id=a))
                 
                 # Manage Leader / CoLeader / Elder / Member Role
                 if gameRole == 'leader':
