@@ -1240,9 +1240,24 @@ async def clan_list(ctx):
 @option("elder_role", discord.Role, description="The role to give all elders of the clan", required=False)
 @option("coleader_role", discord.Role, description="The role to give all co-leaders of the clan", required=False)
 @option("leader_role", discord.Role, description="The role to the leader of the clan", required=False)
-async def clan_addfamily(ctx, id, member_role: discord.Role, elder_role: discord.Role, coleader_role: discord.Role, leader_role: discord.Role,):
+async def clan_addfamily(ctx, id, member_role: discord.Role, elder_role=None, coleader_role=None, leader_role: discord.Role=None):
 
-    jsondata = {"id": id, "clans": [], "roles": {"member": member_role.id, "elder": elder_role.id, "coleader": coleader_role.id, "leader": leader_role.id}}
+    if elder_role is None:
+        elder_role_id = None
+    else:
+        elder_role_id = elder_role.id
+
+    if coleader_role is None:
+        coleader_role_id = None
+    else:
+        coleader_role_id = coleader_role.id
+
+    if leader_role is None:
+        leader_role_id = None
+    else:
+        leader_role_id = leader_role.id
+
+    jsondata = {"id": id, "clans": [], "roles": {"member": member_role.id, "elder": elder_role_id, "coleader": coleader_role_id, "leader": leader_role_id}}
 
     with open('./data/otherClans.json', 'r') as f:
         data = json.load(f)
