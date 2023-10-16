@@ -86,7 +86,6 @@ def inverse_dict(my_dict):
 async def on_ready():
     # Change presence
     server = bot.get_guild(settings['servers']['main'])
-    serverName = remove_emojis(server.name)
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name=f'för CRS | crsweden.com'))
 
     syncall.start() # Start syncing all users automatically
