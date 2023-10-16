@@ -131,20 +131,16 @@ def unix(input):
 @bot.command(name='info', description = 'View some info about the bot.')
 async def info(ctx):
 
-    # Generate Server Name
-    server = bot.get_guild(settings['servers']['main'])
-    server_name = remove_emojis(server.name)
-
     # Create Embed
-    embed = discord.Embed(title=f'{server_name} Info', color=defaultColour)
+    embed = discord.Embed(title=f'Bot Info', color=defaultColour)
 
     embed.add_field(name='Server ID', value=f':computer: `{server.id}`')
-    embed.add_field(name='Bot Version', value=f':robot: `v{bot_version}`')
     embed.add_field(name='Language', value=f':flag_se: `se`')
     embed.add_field(name='Linked Accounts', value=f':handshake: `{await total_linked()}`')
+    embed.add_field(name='Developer', value=f':computer: [github.com/thomaskeig](https://github.com/thomaskeig)')
     embed.add_field(name='Open Source Repository', value=f':open_file_folder: [thomaskeig/cr-sweden](https://github.com/thomaskeig/cr-sweden)')
 
-    embed.set_footer(text=f'{bot.user} - Created by thomaskeig', icon_url=bot.user.avatar.url)
+    embed.set_footer(text=f'{bot.user} - Developed by thomaskeig', icon_url=bot.user.avatar.url)
 
     await ctx.respond(embed=embed)
 
