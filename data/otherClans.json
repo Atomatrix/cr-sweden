@@ -1,1 +1,25 @@
-[]
+[
+    {
+        "id": "woodland",
+        "clans": {
+            "29Y2UL82": {
+                "member": 1163546914508243015,
+                "elder": null,
+                "coleader": null,
+                "leader": null
+            },
+            "L28CL2QU": {
+                "member": 1163546924247420959,
+                "elder": null,
+                "coleader": null,
+                "leader": null
+            }
+        },
+        "roles": {
+            "member": 1162076620560015360,
+            "elder": 1162076615828844715,
+            "coleader": 1162076611030564956,
+            "leader": 1162076601387851807
+        }
+    }
+]
