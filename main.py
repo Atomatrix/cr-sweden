@@ -142,7 +142,7 @@ async def on_message(message):
     # // Ignore bot messages
     if message.author == bot.user:
         return
-    
+
     # // Auto publish announcement channel messages
     try:
         if message.channel.is_news():
@@ -171,7 +171,7 @@ async def on_message(message):
                 await message.delete()
                 await asyncio.sleep(10)
                 await embed_message.delete()
-            
+
             tag = message_content.replace('#', '')
 
             if await is_linked_cr(tag): # Check if the tag already linked
@@ -180,12 +180,12 @@ async def on_message(message):
                 await message.delete()
                 await asyncio.sleep(10)
                 await embed_message.delete()
-            
+
             else:
 
                 async with aiohttp.ClientSession() as cs:
                     async with cs.get(f'https://proxy.royaleapi.dev/v1/players/%23{tag}', headers=api) as data:
-                        
+
                         if data.status == 403:
                             embed = discord.Embed(description=f'<@{message.author.id}> Ett internt problem har skett. API\'n tillåter inte tillgången till den här serverns IP.', color=redColour)
                             embed_message = await channel.send(embed=embed)
@@ -199,7 +199,7 @@ async def on_message(message):
                             await message.delete()
                             await asyncio.sleep(10)
                             await embed_message.delete()
-                        
+
                         elif data.status != 200:
                             embed = discord.Embed(description=f'<@{message.author.id}> Ett okänt internt problem har inträffat. Ber om ursäkt för det! Vänligen kontakta en Administratör för hjälp! (Error {data.status})', color=redColour)
                             embed_message = await channel.send(embed=embed)
@@ -213,7 +213,7 @@ async def on_message(message):
 
                             official_tag = profile['tag'].replace('#', '')
                             official_name = profile['name']
-                            
+
                             # Link the account in the database
                             await add_user(discordid=message.author.id, cr_tag=official_tag)
 
@@ -240,9 +240,9 @@ async def unlink(ctx):
 
         embed = discord.Embed(description=f'Du har inte länkat ditt konto, därför kan du inte unlinka det!', color=redColour)
         await ctx.send(embed=embed, ephemeral=True)
-    
+
     else:
-        
+
         # Unlink the account from the database
         await remove_user(ctx.author.id)
 
@@ -277,7 +277,7 @@ async def unlink(ctx):
                 message = f'<@{ctx.author.id}> har unlinkat sitt konto!',
                 colour = greenColour
             )
-                
+
 def remove_all_values_from_list(the_list, val):
    return [value for value in the_list if value != val]
 
@@ -287,20 +287,20 @@ async def sync_command(userid):
         channel = bot.get_channel(settings['channels']['sync-logs'])
 
         if await is_linked_discord(userid):
-            
+
             server = bot.get_guild(settings['servers']['main'])
             user = server.get_member(int(userid))
-            
+
             tag = await get_tag(userid)
 
             async with aiohttp.ClientSession() as cs:
                 async with cs.get(f'https://proxy.royaleapi.dev/v1/players/%23{tag}', headers=api) as data:
                     profile = await data.json()
-            
+
             if data.status != 200:
                 embed = discord.Embed(description=f'{cross_emoji} Problem vid försök att införskaffa data om <@{userid}>\'s konto. Felkod: {data.status}: `{profile["reason"]}`', color=redColour)
                 await channel.send(embed=embed)
-            
+
             else: # data.status == 200
 
                 name = profile["name"]
@@ -335,7 +335,7 @@ async def sync_command(userid):
 
                 with open('./data/otherClans.json', 'r') as f:
                     other_clans = json.load(f)
-                
+
                 for i in other_clans:
                     clan_member_id_list.append(i['roles']['member'])
                     clan_member_id_list.append(i['roles']['elder'])
@@ -347,16 +347,21 @@ async def sync_command(userid):
                 clan_family_roles_given = []
                 for clan_family in other_clans:
 
-                    for clanid in clan_family['clans']:
+                    for clanid in list(clan_family['clans'].keys()):
 
                         if clan_tag == ('#' + clanid):
-                            
+
+                            # Add INDIVIDUAL ROLES if their clan has one and they don't have it
+                            if clan_family['clans'][clanid] is not None:
+                                role = discord.utils.get(user.guild.roles, id=clan_family['clans'][clanid])
+                                await user.add_roles(role)
+
                             # Add MEMBER role if they don't have it
                             if clan_family['roles']['member'] not in [r.id for r in user.roles]:
                                 role = discord.utils.get(user.guild.roles, id=clan_family['roles']['member'])
                                 await user.add_roles(role)
                             clan_family_roles_given.append(clan_family['roles']['member'])
-                            
+
                             # Add ELDER role if they need it but don't have it
                             if clan_family['roles']['elder'] is not None: # Check one is defined
                                 if gameRole == 'elder':
@@ -380,7 +385,7 @@ async def sync_command(userid):
                                         role = discord.utils.get(user.guild.roles, id=clan_family['roles']['leader'])
                                         await user.add_roles(role)
                                     clan_family_roles_given.append(clan_family['roles']['leader'])
-                            
+
                             break
 
                 # REMOVE OTHER CLAN ROLES
@@ -390,13 +395,13 @@ async def sync_command(userid):
                 for a in clan_member_id_list: # For every clan member role, remove it from the user if them have it
                     if a in [r.id for r in user.roles]:
                         await user.remove_roles(discord.utils.get(user.guild.roles, id=a))
-  
+
 
                 # KING LEVEL SYNC
                 # kinglevels = list(settings['roles']['clans']['king-level'].keys())
 
                 # for i in kinglevels:
-                    
+
                 #     if expLevel >= i:
                 #         king_level_dropback = i
                 #     else:
@@ -409,11 +414,11 @@ async def sync_command(userid):
                 # for i in list(settings['roles']['clans']['king-level'].values()):
                 #     if i != settings['roles']['clans']['king-level'][king_level_dropback]:
                 #         temp_list.append(i)
-                
+
                 # for a in temp_list:
                 #     if a in [r.id for r in user.roles]: # If they have the role, remove it from them
                 #         await user.remove_roles(discord.utils.get(user.guild.roles, id=a))
-                
+
                 # Manage Leader / CoLeader / Elder / Member Role
                 if gameRole == 'leader':
                     if settings['roles']['clans']['leader'] not in [r.id for r in user.roles]:
@@ -423,7 +428,7 @@ async def sync_command(userid):
                         for looprole in removal_roles:
                             if looprole in [r.id for r in user.roles]:
                                 await user.remove_roles(discord.utils.get(user.guild.roles, id=looprole))
-                
+
                 elif gameRole == 'coLeader':
                     if settings['roles']['clans']['coleader'] not in [r.id for r in user.roles]:
                         await user.add_roles(discord.utils.get(user.guild.roles, id=settings['roles']['clans']['coleader']))
@@ -432,7 +437,7 @@ async def sync_command(userid):
                         for looprole in removal_roles:
                             if looprole in [r.id for r in user.roles]:
                                 await user.remove_roles(discord.utils.get(user.guild.roles, id=looprole))
-                
+
                 elif gameRole == 'elder':
                     if settings['roles']['clans']['elder'] not in [r.id for r in user.roles]:
                         await user.add_roles(discord.utils.get(user.guild.roles, id=settings['roles']['clans']['elder']))
@@ -471,7 +476,7 @@ async def sync_command(userid):
                 if dunce:
                     if settings['roles']['utility']['dunce'] not in [r.id for r in user.roles]: # If they don't have the role, give it to them
                         await user.add_roles(discord.utils.get(user.guild.roles, id=settings['roles']['utility']['dunce']))
-                        
+
                 if not dunce:
                     if settings['roles']['utility']['dunce'] in [r.id for r in user.roles]: # If they have the role, remove it from them
                         await user.remove_roles(discord.utils.get(user.guild.roles, id=settings['roles']['utility']['dunce']))
@@ -479,7 +484,7 @@ async def sync_command(userid):
                 embed = discord.Embed(description=f'{tick_emoji} Synkade roller åt **{name}** `{tag}`', color=greenColour)
                 await original_msg.edit(embed=embed)
 
-    
+
     except Exception as e:
         print(f'Sync Error: {e}')
         embed = discord.Embed(description=f'{cross_emoji} Ett problem har inträffat!\n```{e}```', color=discord.Colour(0xb31e35))
@@ -536,13 +541,13 @@ async def suggest(ctx, suggestion):
 @punishment.command(name="list", description='List all users who have been punished')
 @commands.cooldown(3, 15, commands.BucketType.user) # The command can only be used 3 times in 15 seconds
 async def punishment_list(ctx):
-    
+
     message = ''
 
     for userid in await all_dunce_users():
         user = await bot.fetch_user(userid)
         message = message + f'- **{user}** `{user.id}`\n'
-    
+
     embed = discord.Embed(title=f'Punished Users', description=message, color=defaultColour)
 
     await ctx.respond(embed=embed)
@@ -553,33 +558,33 @@ async def punishment_list(ctx):
 @option("reason", description="Inkludera detaljer om varför du valt att sätta spelaren i skamvrån!", required=True)
 @commands.cooldown(5, 3600, commands.BucketType.user) # The command can only be used 5 times in 3600 seconds
 async def suggest(ctx, user, reason):
-    
+
     if await dunce_status(user.id):
         await ctx.respond('Den här spelaren är redan placerad i skamvrån!')
-    
+
     else:
-        
+
         change_dunce(user.id, new_value=True)
 
         channel = bot.get_channel(settings['channels']['dunce-logs'])
         await channel.send(f'**{ctx.author}** `{ctx.author.id}` placerade **{user}** `{user}` i skamvrån pågrund.')
-        
+
         await ctx.respond('Jag placerade den här spelaren i skamvrån!', ephemeral=True)
 
         await sync_command(user.id)
-    
+
 @punishment.command(name="remove", description='Ta ut en spelare ur skamvrån! Återger normal tillgång till servern!')
 @option("user", discord.User, description="Namnet på spelaren!", required=True)
 @commands.cooldown(5, 3600, commands.BucketType.user) # The command can only be used 5 times in 3600 seconds
 async def suggest(ctx, user):
-    
+
     if not await dunce_status(user.id):
         await ctx.respond('Den här spelaren är inte placerad i skamvrån!')
-    
+
     else:
-        
+
         change_dunce(user.id, new_value=False)
-        
+
         await ctx.respond('Jag tog ut spelaren ur skamvrån!', ephemeral=True)
 
         channel = bot.get_channel(settings['channels']['dunce-logs'])
@@ -591,13 +596,13 @@ async def cardListWithoutChampions():
     async with aiohttp.ClientSession() as cs:
         async with cs.get(f'https://proxy.royaleapi.dev/v1/cards', headers=api) as data:
             data = await data.json()
-    
+
     cardList = []
 
     for i in data['items']:
         if i['maxLevel'] != 4: # If the card is not a champion
             cardList.append(i['name'])
-    
+
     return cardList
 
 async def getCards(ctx: discord.AutocompleteContext):
@@ -610,32 +615,32 @@ async def trade_addcard(ctx, card):
     if not await is_linked_discord(ctx.author.id):
         embed = discord.Embed(description=f'{slashcmd_emoji} Du har inte länkat ditt konto, länka ditt konto innan du försöker handla!', color=redColour)
         await ctx.respond(embed=embed)
-    
+
     else:
         with open('./data/userTrades.json', 'r') as f:
             data = json.load(f)
-        
+
         if str(ctx.author.id) not in data: # if the user doesn't have a list already
             data[str(ctx.author.id)] = []
 
             with open('./data/userTrades.json', 'w') as f:
                 json.dump(data, f, indent=4)
-        
+
             with open('./data/userTrades.json', 'r') as f: # Reopen file with updated info
                 data = json.load(f)
-        
+
         userList = data[str(ctx.author.id)]
 
         if len(userList) >= settings['trades']['max-cards']:
             embed = discord.Embed(description=f'{slashcmd_emoji} You can only add `{settings["trades"]["max-cards"]}` cards to your list. You currently have `{len(userList)}`.\n\nRemove cards with `/trade removecard` and view your full list with `/trade list`.', color=redColour)
             await ctx.respond(embed=embed)
-        
+
         else:
 
             async with aiohttp.ClientSession() as cs:
                 async with cs.get(f'https://proxy.royaleapi.dev/v1/cards', headers=api) as r:
                     cardData = await r.json()
-            
+
             found = False
             for i in cardData['items']:
                 if i['name'].lower() == card.lower():
@@ -650,14 +655,14 @@ async def trade_addcard(ctx, card):
 
                     cardName = i['name']
                     cardIcon = i['iconUrls']['medium']
-                    
+
                     break
 
-            
+
             if not found:
                 embed = discord.Embed(description=f'{slashcmd_emoji} `{card}` cannot be found. Make sure you entered the name correctly!', color=redColour)
                 await ctx.respond(embed=embed)
-            
+
             elif champion: # If the card is a champion
                 cardName = i['name']
                 cardIcon = i['iconUrls']['medium']
@@ -667,12 +672,12 @@ async def trade_addcard(ctx, card):
                 await ctx.respond(embed=embed)
 
             else:
-            
+
                 if cardId in userList:
                     embed = discord.Embed(description=f'{slashcmd_emoji} `{cardName}` is already in your list. Remove it with `/trade removecard` or view your current list with `/trade list`.', color=redColour)
                     embed.set_thumbnail(url=cardIcon)
                     await ctx.respond(embed=embed)
-                
+
                 else:
 
                     data[str(ctx.author.id)].append(cardId)
@@ -693,26 +698,26 @@ async def trade_removecard(ctx, card):
     if not await is_linked_discord(ctx.author.id):
         embed = discord.Embed(description=f'{slashcmd_emoji} Du har inte länkat ditt konto, länka ditt konto innan du försöker handla!', color=redColour)
         await ctx.respond(embed=embed)
-    
+
     else:
         with open('./data/userTrades.json', 'r') as f:
             data = json.load(f)
-        
+
         if str(ctx.author.id) not in data: # if the user doesn't have a list already
             data[str(ctx.author.id)] = []
 
             with open('./data/userTrades.json', 'w') as f:
                 json.dump(data, f, indent=4)
-        
+
             with open('./data/userTrades.json', 'r') as f: # Reopen file with updated info
                 data = json.load(f)
-        
+
         userList = data[str(ctx.author.id)]
 
         async with aiohttp.ClientSession() as cs:
             async with cs.get(f'https://proxy.royaleapi.dev/v1/cards', headers=api) as r:
                 cardData = await r.json()
-        
+
         found = False
         for i in cardData['items']:
             if i['name'].lower() == card.lower():
@@ -721,7 +726,7 @@ async def trade_removecard(ctx, card):
                 cardName = i['name']
                 cardIcon = i['iconUrls']['medium']
                 break
-        
+
         if not found:
             embed = discord.Embed(description=f'{slashcmd_emoji} `{card}` cannot be found. Make sure you entered the name correctly!', color=redColour)
             await ctx.respond(embed=embed)
@@ -731,7 +736,7 @@ async def trade_removecard(ctx, card):
                 embed = discord.Embed(description=f'{slashcmd_emoji} `{cardName}` is not in list. Add it with `/trade addcard` or view your current list with `/trade list`.', color=redColour)
                 embed.set_thumbnail(url=cardIcon)
                 await ctx.respond(embed=embed)
-            
+
             else:
 
                 data[str(ctx.author.id)].remove(cardId)
@@ -749,20 +754,20 @@ async def trade_list(ctx):
     if not await is_linked_discord(ctx.author.id):
         embed = discord.Embed(description=f'{slashcmd_emoji} Du har inte länkat ditt konto, länka ditt konto innan du försöker handla!', color=redColour)
         await ctx.respond(embed=embed)
-    
+
     else:
         with open('./data/userTrades.json', 'r') as f:
             data = json.load(f)
-        
+
         if str(ctx.author.id) not in data: # if the user doesn't have a list already
             data[str(ctx.author.id)] = []
 
             with open('./data/userTrades.json', 'w') as f:
                 json.dump(data, f, indent=4)
-        
+
             with open('./data/userTrades.json', 'r') as f: # Reopen file with updated info
                 data = json.load(f)
-        
+
         userList = data[str(ctx.author.id)]
 
         message = ''
@@ -847,14 +852,14 @@ async def trade_create(ctx, request, offer_1=None, offer_2=None, offer_3=None, o
     if not await is_linked_discord(ctx.author.id):
         embed = discord.Embed(description=f'{slashcmd_emoji} Du har inte länkat ditt konto, länka ditt konto innan du försöker handla!', color=redColour)
         await ctx.respond(embed=embed)
-    
+
     else:
 
         offerCards = [offer_1, offer_2, offer_3, offer_4]
 
         # Remove any cards that were not inputted
         offerCards = [i for i in offerCards if i is not None]
-        
+
         # Create JSON of cards
         userRequestCard = await findCard(request)
         userOffer1Card = await findCard(offer_1)
@@ -866,12 +871,12 @@ async def trade_create(ctx, request, offer_1=None, offer_2=None, offer_3=None, o
         if userRequestCard['success'] == False:
             embed = discord.Embed(description=f'{cross_emoji} The card `{request}` could not be found. Check your entry for spelling mistakes.', color=redColour)
             await ctx.respond(embed=embed)
-        
+
         # Check if all the offer cards are valid
         elif userOffer1Card['success'] == False or userOffer2Card['success'] == False or userOffer3Card['success'] == False or userOffer4Card['success'] == False: # If any offer cards are inputted but are not valid
             embed = discord.Embed(description=f'{cross_emoji} One or more of your offer cards could not be found. Check your entry for spelling mistakes.', color=redColour)
             await ctx.respond(embed=embed)
-        
+
         # Check if any cards are duplicates
         elif duplicatesInList([userRequestCard['cardId'], userOffer1Card['cardId'], userOffer2Card['cardId'], userOffer3Card['cardId'], userOffer4Card['cardId']]):
             embed = discord.Embed(description=f'{cross_emoji} You have given duplicate cards! Remember, you don\'t have to use all the offer slots!', color=redColour)
@@ -930,10 +935,10 @@ async def trade_create(ctx, request, offer_1=None, offer_2=None, offer_3=None, o
             async with aiohttp.ClientSession() as cs:
                 async with cs.get(f'https://proxy.royaleapi.dev/v1/players/%23{tag}', headers=api) as data:
                     profile = await data.json()
-            
+
             crIgn = profile['name']
             crTag = profile['tag']
-            
+
             try:
                 clanName = profile['clan']['name']
                 clanTag = profile['clan']['tag']
@@ -944,7 +949,7 @@ async def trade_create(ctx, request, offer_1=None, offer_2=None, offer_3=None, o
             async with aiohttp.ClientSession() as cs:
                 async with cs.get(f'https://proxy.royaleapi.dev/v1/clans/%23{settings["trades"]["trade-clan-id"]}', headers=api) as data:
                     tradeClan = await data.json()
-            
+
             tradeClanName = tradeClan['name']
             tradeClanTag = tradeClan['tag']
 
@@ -972,7 +977,7 @@ async def trade_create(ctx, request, offer_1=None, offer_2=None, offer_3=None, o
 
             tradeMsgLink = tradeMsg.jump_url
             tradeThreadLink = tradeThread.jump_url
-        
+
             successEmbed = discord.Embed(description=f'Your trade request for {userRequestCard["cardName"]} has been created successfully!\n\n[Jump to Message]({tradeMsgLink})\n[Jump to Thread]({tradeThreadLink})', color=defaultColour)
             successEmbed.set_footer(text=f'Trade ID: {tradeId}')
             await ctx.respond(embed=successEmbed)
@@ -991,7 +996,7 @@ async def trade_create(ctx, request, offer_1=None, offer_2=None, offer_3=None, o
 @option("prize", description="What is the prize for the winner. Leave blank if there is no prize", required=False)
 @commands.cooldown(3, 6000, commands.BucketType.user) # The command can only be used 5 times in 6000 seconds
 async def tournament_create(ctx, tag, description, password=None, prize='No Prize'):
-    
+
     tournamentTag = tag.replace('#', '')
 
     async with aiohttp.ClientSession() as cs:
@@ -1000,9 +1005,9 @@ async def tournament_create(ctx, tag, description, password=None, prize='No Priz
 
     if data.status == 404:
         await ctx.respond('That tournament was not found, make sure you copied the tag correctly!', ephemeral=True)
-    
+
     else:
-        
+
         await ctx.defer()
 
         allowedContinue = True
@@ -1011,18 +1016,18 @@ async def tournament_create(ctx, tag, description, password=None, prize='No Priz
         elif tournamentData["type"] == 'passwordProtected':
             if password is None:
                 allowedContinue = False
-        
+
         if not allowedContinue:
             await ctx.respond('That tournament is password protected but you didn\'t supply a password. Please add a password to post the event.', ephemeral=True)
 
         else:
-            
+
             gamemodeName = 'Not Found'
 
             async with aiohttp.ClientSession() as cs:
                 async with cs.get(f'https://royaleapi.github.io/cr-api-data/json/game_modes.json', headers=api) as data:
                     gamemodeData = await data.json()
-            
+
             for i in gamemodeData:
                 if i["id"] == tournamentData["gameMode"]["id"]:
                     gamemodeName = i["name_en"]
@@ -1064,7 +1069,7 @@ async def tournament_create(ctx, tag, description, password=None, prize='No Priz
 
             descriptionEmbed = discord.Embed(title=f'TURNERING', description=mainDescription, color=defaultColour)
             descriptionEmbed.set_footer(text=f'Ansvaring Administratör: {ctx.author}', icon_url=ctx.author.avatar.url)
-            
+
             channel = bot.get_channel(1046453546897391666)
             tournMessage = await channel.send(content='@everyone', embeds=[titleEmbed, descriptionEmbed])
 
@@ -1086,7 +1091,7 @@ def TournData(tournamentData, rank):
     for i in tournamentData["membersList"]:
         if i['rank'] == rank:
             return i
-    
+
     # If the rank wasn't found
     return json.loads(json.dumps({"name": 'n/a', "tag": '#000000', "score": '0'}))
 
@@ -1102,9 +1107,9 @@ async def checkTournamentWinners():
             async with aiohttp.ClientSession() as cs:
                 async with cs.get(f'https://proxy.royaleapi.dev/v1/tournaments/%23{id}', headers=api) as data:
                     tournamentData = await data.json()
-            
+
             if tournamentData["status"] == 'ended': # If it's found a tournament that's just ended
-                
+
                 mainDescription = f'''
                 **{tournamentData["name"]}** - `{tournamentData["tag"]}`
 
@@ -1122,10 +1127,10 @@ async def checkTournamentWinners():
                 trackedTournaments.remove(id)
                 with open('./data/trackedTournaments.json', 'w') as f:
                     json.dump(trackedTournaments, f, indent=4)
-    
+
     except Exception as e:
         print(f'Tracking Tournaments Error: {e}')
-            
+
 
 
 
@@ -1138,7 +1143,7 @@ async def disqualify_add(ctx, user):
 
     # // Add disqualified role
     await user.add_roles(discord.utils.get(user.guild.roles, id=settings['roles']['utility']['disqualified']))
-    
+
     embed = discord.Embed(title=f'User Disqualified', description=f'**User:** <@{user.id}>\n\nRevoke this ban with `/disqualify remove`.', color=defaultColour)
 
     await ctx.respond(embed=embed, ephemeral=True)
@@ -1151,7 +1156,7 @@ async def disqualify_remove(ctx, user):
 
     # // Remove disqualified role
     await user.remove_roles(discord.utils.get(user.guild.roles, id=settings['roles']['utility']['disqualified']))
-    
+
     embed = discord.Embed(title=f'User Undisqualified', description=f'**User:** <@{user.id}>\n\nBan this user again with `/disqualify add`.', color=defaultColour)
 
     await ctx.respond(embed=embed, ephemeral=True)
@@ -1163,11 +1168,11 @@ async def disqualify_remove(ctx, user):
 async def royaleapi(ctx, user):
 
     tag = await get_tag(user.id)
-    
+
     if tag is None:
         embed = discord.Embed(description='That user has not linked their account yet!', color=defaultColour)
         await ctx.respond(embed=embed, ephemeral=True)
-    
+
     else:
         embed = discord.Embed(title=f'{user}\'s RoyaleAPI Profile', description=f'https://royaleapi.com/player/{tag}', color=defaultColour)
         await ctx.respond(embed=embed, ephemeral=True)
@@ -1179,15 +1184,18 @@ async def clan_list(ctx):
 
     with open('./data/otherClans.json', 'r') as f:
         other_clans = json.load(f)
-    
+
     description = ''
 
     for clan in other_clans:
 
         clanList = ''
-        for i in clan['clans']:
-            clanList = clanList + f'`{i}`, '
-        
+        for i in list(clan['clans'].keys()):
+            if clan['clans'][i] is not None:
+                clanList = clanList + f'`#{i}` <@&{clan["clans"][i]}>, '
+            else:
+                clanList = clanList + f'`#{i}` **NO ROLE**, '
+
         if clanList == '':
             clanList = 'N/A'
         else:
@@ -1214,7 +1222,7 @@ async def clan_list(ctx):
             leader_role_mention = f'<@&{clan["roles"]["leader"]}>'
 
         description = description + f'- __**{clan["id"]}**__\n - **Roles:** {member_role_mention}, {elder_role_mention}, {coleader_role_mention}, {leader_role_mention}\n - **Clans:** {clanList}\n\n'
-    
+
     embed = discord.Embed(title='Clan Roles', description=description, color=defaultColour)
     embed.set_footer(text='If a member is in any of these clans, they will get the appropriate role.')
     await ctx.respond(embed=embed, ephemeral=True)
@@ -1243,7 +1251,7 @@ async def clan_addfamily(ctx, id, member_role: discord.Role, elder_role=None, co
     else:
         leader_role_id = leader_role.id
 
-    jsondata = {"id": id, "clans": [], "roles": {"member": member_role.id, "elder": elder_role_id, "coleader": coleader_role_id, "leader": leader_role_id}}
+    jsondata = {"id": id, "clans": {}, "roles": {"member": member_role.id, "elder": elder_role_id, "coleader": coleader_role_id, "leader": leader_role_id}}
 
     with open('./data/otherClans.json', 'r') as f:
         data = json.load(f)
@@ -1252,7 +1260,7 @@ async def clan_addfamily(ctx, id, member_role: discord.Role, elder_role=None, co
 
     with open('./data/otherClans.json', 'w+') as f:
         json.dump(data, f, indent = 4)
-    
+
     embed = discord.Embed(title='Created Clan Family', description=f'<:ClashRoyaleDot:1022857029930459156> **Family ID:** {id}\n<:ClashRoyaleDot:1022857029930459156> **Member Role:** <@&{member_role.id}>\n<:ClashRoyaleDot:1022857029930459156> **Elder Role:** <@&{elder_role_id}>\n<:ClashRoyaleDot:1022857029930459156> **Co-Leader Role:** <@&{coleader_role_id}>\n<:ClashRoyaleDot:1022857029930459156> **Leader Role:** <@&{leader_role_id}>', color=greenColour)
     await ctx.respond(embed=embed, ephemeral=True)
 
@@ -1263,14 +1271,14 @@ async def clan_deletefamily(ctx, id):
 
     with open('./data/otherClans.json', 'r') as f:
         otherClans = json.load(f)
-    
+
     found = False
     for i in otherClans:
         if i["id"] == id:
             found = True
 
             otherClans.remove(i)
-    
+
             with open('./data/otherClans.json', 'w+') as f:
                 json.dump(otherClans, f, indent = 4)
 
@@ -1287,13 +1295,14 @@ async def clan_deletefamily(ctx, id):
 @otherclan.command(name="addclan", description='Add a clan to a clan family')
 @option("family_id", description="Backend name/ID for the clan family (eg: 'woodland' or '88an')", required=True)
 @option("clan_id", description="The Clash Royale Clan ID to add to the family", required=True)
-async def clan_addclan(ctx, family_id, clan_id):
+@option("role", discord.Role, description="The role to give to members of this specific clan", required=False)
+async def clan_addclan(ctx, family_id, clan_id, role=None):
 
     clan_id.replace('#', '')
 
     with open('./data/otherClans.json', 'r') as f:
         otherClans = json.load(f)
-    
+
     found = False
     index = 0
     for i in otherClans:
@@ -1303,17 +1312,21 @@ async def clan_addclan(ctx, family_id, clan_id):
             async with aiohttp.ClientSession() as cs:
                 async with cs.get(f'https://proxy.royaleapi.dev/v1/clans/%23{clan_id}', headers=api) as data:
                     clanInfo = await data.json()
-            
+
             if data.status == 200:
 
-                otherClans[index]['clans'].append(clan_id)
-        
+                # Add the clan to the list
+                if role is None:
+                    otherClans[index]['clans'][clan_id] = None
+                else:
+                    otherClans[index]['clans'][clan_id] = role.id
+
                 with open('./data/otherClans.json', 'w+') as f:
                     json.dump(otherClans, f, indent = 4)
 
                 embed = discord.Embed(title='Added Clan', description=f'<:ClashRoyaleDot:1022857029930459156> **Family ID:** {family_id}\n<:ClashRoyaleDot:1022857029930459156> **Clan Name:** {clanInfo["name"]}\n<:ClashRoyaleDot:1022857029930459156> **Members:** {clanInfo["members"]}/50\n<:ClashRoyaleDot:1022857029930459156> **Clan ID:** `#{clan_id}`', color=greenColour)
                 await ctx.respond(embed=embed, ephemeral=True)
-            
+
             elif data.status == 404:
                 embed = discord.Embed(title='Clan Not Found', description=f'A clan with that ID was not found.', color=redColour)
                 await ctx.respond(embed=embed, ephemeral=True)
@@ -1323,7 +1336,7 @@ async def clan_addclan(ctx, family_id, clan_id):
                 await ctx.respond(embed=embed, ephemeral=True)
 
             break
-        
+
         index += 1
 
     if not found:
@@ -1343,7 +1356,7 @@ async def clan_deleteclan(ctx, family_id, clan_id):
 
     with open('./data/otherClans.json', 'r') as f:
         otherClans = json.load(f)
-    
+
     found = False
     index = 0
     for i in otherClans:
@@ -1352,20 +1365,21 @@ async def clan_deleteclan(ctx, family_id, clan_id):
 
             if clan_id in otherClans[index]['clans']:
 
-                otherClans[index]['clans'].remove(clan_id)
-        
+                # Remove the clan from the list
+                otherClans[index]['clans'].pop(clan_id, None)
+
                 with open('./data/otherClans.json', 'w+') as f:
                     json.dump(otherClans, f, indent = 4)
 
                 embed = discord.Embed(title='Removed Clan', description=f'Successfully removed `#{clan_id}` from the clan family **{family_id}**.', color=greenColour)
                 await ctx.respond(embed=embed, ephemeral=True)
-            
+
             else:
                 embed = discord.Embed(description=f'The clan ID **{clan_id}** was not found in the family **{family_id}**.', color=redColour)
                 await ctx.respond(embed=embed, ephemeral=True)
 
             break
-        
+
         index += 1
 
     if not found:
@@ -1387,7 +1401,7 @@ async def change_to_random_banner():
     async with aiohttp.ClientSession() as cs:
         async with cs.get(f'https://thomaskeig.com/api/crs/banners.json', headers=api) as data:
             bannerlist = await data.json()
-    
+
     url = random.choice(bannerlist)
 
     with urllib.request.urlopen(url) as response:
