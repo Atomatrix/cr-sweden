@@ -3,6 +3,7 @@ import discord
 from discord import option
 from discord.commands import option, Option
 from discord.ext import commands, tasks
+from discord.ext.pages import Paginator, Page, PaginatorButton
 import aiohttp
 import yaml
 import asyncio
@@ -131,7 +132,6 @@ async def info(ctx):
     # Create Embed
     embed = discord.Embed(title=f'Bot Info', color=defaultColour)
 
-    embed.add_field(name='Server ID', value=f':computer: `{server.id}`')
     embed.add_field(name='Language', value=f':flag_se: `se`')
     embed.add_field(name='Linked Accounts', value=f':handshake: `{await total_linked()}`')
     embed.add_field(name='Developer', value=f':computer: [github.com/thomaskeig](https://github.com/thomaskeig)')
@@ -370,6 +370,12 @@ async def sync_command(userid):
                     clan_member_id_list.append(i['roles']['coleader'])
                     clan_member_id_list.append(i['roles']['leader'])
 
+                    for a in i['clans']:
+                        clan_member_id_list.append(a['member'])
+                        clan_member_id_list.append(a['elder'])
+                        clan_member_id_list.append(a['coleader'])
+                        clan_member_id_list.append(a['leader'])
+
                 # GIVE OTHER CLAN ROLES
                 clan_family_roles_given = []
                 for clan_family in other_clans:
@@ -378,18 +384,36 @@ async def sync_command(userid):
 
                         if clan_tag == ('#' + clanid):
 
-                            # Add INDIVIDUAL ROLES if their clan has one and they don't have it
-                            if clan_family['clans'][clanid] is not None:
-                                role = discord.utils.get(user.guild.roles, id=clan_family['clans'][clanid])
+                            # Add INDIVIDUAL MEMBER ROLE if their clan has one and they don't have it
+                            if clan_family['clans'][clanid]["member"] is not None:
+                                role = discord.utils.get(user.guild.roles, id=clan_family['clans'][clanid]["member"])
                                 await user.add_roles(role)
 
-                            # Add MEMBER role if they don't have it
+                            # Add INDIVIDUAL ELDER ROLE if their clan has one and they don't have it
+                            if clan_family['clans'][clanid]["elder"] is not None:
+                                if gameRole == 'elder':
+                                    role = discord.utils.get(user.guild.roles, id=clan_family['clans'][clanid]["elder"])
+                                    await user.add_roles(role)
+
+                            # Add INDIVIDUAL COLEADER ROLE if their clan has one and they don't have it
+                            if clan_family['clans'][clanid]["coleader"] is not None:
+                                if gameRole == 'coLeader':
+                                    role = discord.utils.get(user.guild.roles, id=clan_family['clans'][clanid]["coleader"])
+                                    await user.add_roles(role)
+
+                            # Add INDIVIDUAL LEADER ROLE if their clan has one and they don't have it
+                            if clan_family['clans'][clanid]["leader"] is not None:
+                                if gameRole == 'leader':
+                                    role = discord.utils.get(user.guild.roles, id=clan_family['clans'][clanid]["leader"])
+                                    await user.add_roles(role)
+
+                            # Add GLOBAL MEMBER role if they don't have it
                             if clan_family['roles']['member'] not in [r.id for r in user.roles]:
                                 role = discord.utils.get(user.guild.roles, id=clan_family['roles']['member'])
                                 await user.add_roles(role)
                             clan_family_roles_given.append(clan_family['roles']['member'])
 
-                            # Add ELDER role if they need it but don't have it
+                            # Add GLOBAL ELDER role if they need it but don't have it
                             if clan_family['roles']['elder'] is not None:  # Check one is defined
                                 if gameRole == 'elder':
                                     if clan_family['roles']['elder'] not in [r.id for r in user.roles]:
@@ -397,7 +421,7 @@ async def sync_command(userid):
                                         await user.add_roles(role)
                                     clan_family_roles_given.append(clan_family['roles']['elder'])
 
-                            # Add COLEADER role if they need it but don't have it
+                            # Add GLOBAL COLEADER role if they need it but don't have it
                             if clan_family['roles']['coleader'] is not None:  # Check one is defined
                                 if gameRole == 'coLeader':
                                     if clan_family['roles']['coleader'] not in [r.id for r in user.roles]:
@@ -405,7 +429,7 @@ async def sync_command(userid):
                                         await user.add_roles(role)
                                     clan_family_roles_given.append(clan_family['roles']['coleader'])
 
-                            # Add LEADER role if they need it but don't have it
+                            # Add GLOBAL LEADER role if they need it but don't have it
                             if clan_family['roles']['leader'] is not None:  # Check one is defined
                                 if gameRole == 'leader':
                                     if clan_family['roles']['leader'] not in [r.id for r in user.roles]:
@@ -1284,50 +1308,91 @@ async def royaleapi(ctx, user):
 
 @otherclan.command(name="list", description='List all other clans and roles')
 async def clan_list(ctx):
+
+    await ctx.defer(ephemeral=True)
+
     with open('./data/otherClans.json', 'r') as f:
         other_clans = json.load(f)
 
-    description = ''
+    embedList = []
+    iter = 0
 
     for clan in other_clans:
 
+        description = ''
         clanList = ''
+        clanListAndRoles = ''
         for i in list(clan['clans'].keys()):
-            if clan['clans'][i] is not None:
-                clanList = clanList + f'`#{i}` <@&{clan["clans"][i]}>, '
+
+            async with aiohttp.ClientSession() as cs:
+                async with cs.get(f'https://proxy.royaleapi.dev/v1/clans/%23{i}', headers=api) as data:
+                    clanInfo = await data.json()
+
+            if data.status != 200:
+                clan_name = 'Undefined Clan'
             else:
-                clanList = clanList + f'`#{i}` **NO ROLE**, '
+                clan_name = clanInfo["name"]
+
+            clanList = clanList + f'`#{i}`, '
+
+            if clan['clans'][i]['member'] is None:
+                member_mention = ':no_entry:'
+            else:
+                member_mention = f'<@&{clan["clans"][i]["member"]}>'
+
+            if clan['clans'][i]['elder'] is None:
+                elder_mention = ':no_entry:'
+            else:
+                elder_mention = f'<@&{clan["clans"][i]["elder"]}>'
+
+            if clan['clans'][i]['coleader'] is None:
+                coleader_mention = ':no_entry:'
+            else:
+                coleader_mention = f'<@&{clan["clans"][i]["coleader"]}>'
+
+            if clan['clans'][i]['leader'] is None:
+                leader_mention = ':no_entry:'
+            else:
+                leader_mention = f'<@&{clan["clans"][i]["leader"]}>'
+
+            clanListAndRoles = clanListAndRoles + f'- **{clan_name} (#{i}) Roles:**\n - **Member:** {member_mention}\n - **Elder:** {elder_mention}\n - **Co-Leader:** {coleader_mention}\n - **Leader:** {leader_mention}\n'
 
         if clanList == '':
-            clanList = 'N/A'
+            clanList = ':no_entry:'
         else:
             clanList = clanList[:-2]  # Remove last two chars
 
         if clan["roles"]["member"] is None:
-            member_role_mention = '**N/A**'
+            global_member_role_mention = ':no_entry:'
         else:
-            member_role_mention = f'<@&{clan["roles"]["member"]}>'
+            global_member_role_mention = f'<@&{clan["roles"]["member"]}>'
 
         if clan["roles"]["elder"] is None:
-            elder_role_mention = '**N/A**'
+            global_elder_role_mention = ':no_entry:'
         else:
-            elder_role_mention = f'<@&{clan["roles"]["elder"]}>'
+            global_elder_role_mention = f'<@&{clan["roles"]["elder"]}>'
 
         if clan["roles"]["coleader"] is None:
-            coleader_role_mention = '**N/A**'
+            global_coleader_role_mention = ':no_entry:'
         else:
-            coleader_role_mention = f'<@&{clan["roles"]["coleader"]}>'
+            global_coleader_role_mention = f'<@&{clan["roles"]["coleader"]}>'
 
         if clan["roles"]["leader"] is None:
-            leader_role_mention = '**N/A**'
+            global_leader_role_mention = ':no_entry:'
         else:
-            leader_role_mention = f'<@&{clan["roles"]["leader"]}>'
+            global_leader_role_mention = f'<@&{clan["roles"]["leader"]}>'
 
-        description = description + f'- __**{clan["id"]}**__\n - **Roles:** {member_role_mention}, {elder_role_mention}, {coleader_role_mention}, {leader_role_mention}\n - **Clans:** {clanList}\n\n'
+        description = description + f'# {clan["id"].title()}\n## Clans in Family: {clanList}\n- **Global Roles:**\n - **Member:** {global_member_role_mention}\n - **Elder:** {global_elder_role_mention}\n - **Co-Leader:** {global_coleader_role_mention}\n - **Leader:** {global_leader_role_mention}\n{clanListAndRoles}\n\n'
 
-    embed = discord.Embed(title='Clan Roles', description=description, color=defaultColour)
-    embed.set_footer(text='If a member is in any of these clans, they will get the appropriate role.')
-    await ctx.respond(embed=embed, ephemeral=True)
+        embed = discord.Embed(description=description, color=defaultColour)
+        embed.set_footer(text=f'(Page {iter+1}/{len(other_clans)})')
+
+        iter += 1
+
+        embedList.append(Page(embeds=[embed]))
+
+    paginator = Paginator(pages=embedList)
+    await paginator.respond(ctx.interaction, ephemeral=True)
 
 
 @otherclan.command(name="addfamily", description='Create a new clan family')
@@ -1402,8 +1467,11 @@ async def clan_deletefamily(ctx, id):
 @otherclan.command(name="addclan", description='Add a clan to a clan family')
 @option("family_id", description="Backend name/ID for the clan family (eg: 'woodland' or '88an')", required=True)
 @option("clan_id", description="The Clash Royale Clan ID to add to the family", required=True)
-@option("role", discord.Role, description="The role to give to members of this specific clan", required=False)
-async def clan_addclan(ctx, family_id, clan_id, role=None):
+@option("member_role", discord.Role, description="The role to give to members of this specific clan", required=False)
+@option("elder_role", discord.Role, description="The role to give to elders of this specific clan", required=False)
+@option("coleader_role", discord.Role, description="The role to give to co-leaders of this specific clan", required=False)
+@option("leader_role", discord.Role, description="The role to give to leaders of this specific clan", required=False)
+async def clan_addclan(ctx, family_id, clan_id, member_role=None, elder_role=None, coleader_role=None, leader_role=None):
     clan_id.replace('#', '')
 
     with open('./data/otherClans.json', 'r') as f:
@@ -1422,10 +1490,20 @@ async def clan_addclan(ctx, family_id, clan_id, role=None):
             if data.status == 200:
 
                 # Add the clan to the list
-                if role is None:
-                    otherClans[index]['clans'][clan_id] = None
-                else:
-                    otherClans[index]['clans'][clan_id] = role.id
+
+                if member_role is None: member_role_id = None
+                else: member_role_id = member_role.id
+
+                if elder_role is None: elder_role_id = None
+                else: elder_role_id = elder_role.id
+
+                if coleader_role is None: coleader_role_id = None
+                else: coleader_role_id = coleader_role.id
+
+                if leader_role is None: leader_role_id = None
+                else: leader_role_id = leader_role.id
+
+                otherClans[index]['clans'][clan_id] = {"member": member_role_id, "elder": elder_role_id, "coleader": coleader_role_id, "leader": leader_role_id}
 
                 with open('./data/otherClans.json', 'w+') as f:
                     json.dump(otherClans, f, indent=4)
