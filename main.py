@@ -14,6 +14,7 @@ import random, string
 import datetime
 import dateutil.parser as dp
 import urllib.request
+import traceback
 
 # Import local utilities for database management
 from database_utils import *
@@ -365,16 +366,10 @@ async def sync_command(userid):
                     other_clans = json.load(f)
 
                 for i in other_clans:
-                    clan_member_id_list.append(i['roles']['member'])
-                    clan_member_id_list.append(i['roles']['elder'])
-                    clan_member_id_list.append(i['roles']['coleader'])
-                    clan_member_id_list.append(i['roles']['leader'])
+                    clan_member_id_list.extend([i['roles']['member'], i['roles']['elder'], i['roles']['coleader'], i['roles']['leader']])
 
-                    for a in i['clans']:
-                        clan_member_id_list.append(a['member'])
-                        clan_member_id_list.append(a['elder'])
-                        clan_member_id_list.append(a['coleader'])
-                        clan_member_id_list.append(a['leader'])
+                    for clanid in i['clans']:
+                        clan_member_id_list.extend([i['clans'][clanid]['member'], i['clans'][clanid]['elder'], i['clans'][clanid]['coleader'], i['clans'][clanid]['leader']])
 
                 # GIVE OTHER CLAN ROLES
                 clan_family_roles_given = []
@@ -384,58 +379,66 @@ async def sync_command(userid):
 
                         if clan_tag == ('#' + clanid):
 
-                            # Add INDIVIDUAL MEMBER ROLE if their clan has one and they don't have it
-                            if clan_family['clans'][clanid]["member"] is not None:
-                                role = discord.utils.get(user.guild.roles, id=clan_family['clans'][clanid]["member"])
-                                await user.add_roles(role)
-
-                            # Add INDIVIDUAL ELDER ROLE if their clan has one and they don't have it
-                            if clan_family['clans'][clanid]["elder"] is not None:
-                                if gameRole == 'elder':
-                                    role = discord.utils.get(user.guild.roles, id=clan_family['clans'][clanid]["elder"])
-                                    await user.add_roles(role)
-
-                            # Add INDIVIDUAL COLEADER ROLE if their clan has one and they don't have it
-                            if clan_family['clans'][clanid]["coleader"] is not None:
-                                if gameRole == 'coLeader':
-                                    role = discord.utils.get(user.guild.roles, id=clan_family['clans'][clanid]["coleader"])
-                                    await user.add_roles(role)
-
-                            # Add INDIVIDUAL LEADER ROLE if their clan has one and they don't have it
-                            if clan_family['clans'][clanid]["leader"] is not None:
-                                if gameRole == 'leader':
-                                    role = discord.utils.get(user.guild.roles, id=clan_family['clans'][clanid]["leader"])
-                                    await user.add_roles(role)
-
                             # Add GLOBAL MEMBER role if they don't have it
                             if clan_family['roles']['member'] not in [r.id for r in user.roles]:
                                 role = discord.utils.get(user.guild.roles, id=clan_family['roles']['member'])
                                 await user.add_roles(role)
                             clan_family_roles_given.append(clan_family['roles']['member'])
 
-                            # Add GLOBAL ELDER role if they need it but don't have it
-                            if clan_family['roles']['elder'] is not None:  # Check one is defined
-                                if gameRole == 'elder':
+                            # Add INDIVIDUAL MEMBER ROLE if their clan has one and they don't have it
+                            if clan_family['clans'][clanid]["member"] is not None:
+                                if clan_family['clans'][clanid]["member"] not in [r.id for r in user.roles]:
+                                    role = discord.utils.get(user.guild.roles, id=clan_family['clans'][clanid]["member"])
+                                    await user.add_roles(role)
+                                clan_family_roles_given.append(clan_family['clans'][clanid]["member"])
+
+                            if gameRole == 'elder':
+
+                                # Add GLOBAL ELDER role if they need it but don't have it
+                                if clan_family['roles']['elder'] is not None:  # Check one is defined
                                     if clan_family['roles']['elder'] not in [r.id for r in user.roles]:
                                         role = discord.utils.get(user.guild.roles, id=clan_family['roles']['elder'])
                                         await user.add_roles(role)
                                     clan_family_roles_given.append(clan_family['roles']['elder'])
 
-                            # Add GLOBAL COLEADER role if they need it but don't have it
-                            if clan_family['roles']['coleader'] is not None:  # Check one is defined
-                                if gameRole == 'coLeader':
+                                # Add INDIVIDUAL ELDER ROLE if their clan has one and they don't have it
+                                if clan_family['clans'][clanid]["elder"] is not None:
+                                    if clan_family['clans'][clanid]["elder"] not in [r.id for r in user.roles]:
+                                        role = discord.utils.get(user.guild.roles, id=clan_family['clans'][clanid]["elder"])
+                                        await user.add_roles(role)
+                                    clan_family_roles_given.append(clan_family['clans'][clanid]["elder"])
+
+                            if gameRole == 'coLeader':
+
+                                # Add GLOBAL COLEADER role if they need it but don't have it
+                                if clan_family['roles']['coleader'] is not None:  # Check one is defined
                                     if clan_family['roles']['coleader'] not in [r.id for r in user.roles]:
                                         role = discord.utils.get(user.guild.roles, id=clan_family['roles']['coleader'])
                                         await user.add_roles(role)
                                     clan_family_roles_given.append(clan_family['roles']['coleader'])
 
-                            # Add GLOBAL LEADER role if they need it but don't have it
-                            if clan_family['roles']['leader'] is not None:  # Check one is defined
-                                if gameRole == 'leader':
+                                # Add INDIVIDUAL COLEADER ROLE if their clan has one and they don't have it
+                                if clan_family['clans'][clanid]["coleader"] is not None:
+                                    if clan_family['clans'][clanid]["coleader"] not in [r.id for r in user.roles]:
+                                        role = discord.utils.get(user.guild.roles, id=clan_family['clans'][clanid]["coleader"])
+                                        await user.add_roles(role)
+                                    clan_family_roles_given.append(clan_family['clans'][clanid]["coleader"])
+
+                            if gameRole == 'leader':
+
+                                # Add GLOBAL LEADER role if they need it but don't have it
+                                if clan_family['roles']['leader'] is not None:  # Check one is defined
                                     if clan_family['roles']['leader'] not in [r.id for r in user.roles]:
                                         role = discord.utils.get(user.guild.roles, id=clan_family['roles']['leader'])
                                         await user.add_roles(role)
                                     clan_family_roles_given.append(clan_family['roles']['leader'])
+
+                                # Add INDIVIDUAL LEADER ROLE if their clan has one and they don't have it
+                                if clan_family['clans'][clanid]["leader"] is not None:
+                                    if clan_family['clans'][clanid]["leader"] not in [r.id for r in user.roles]:
+                                        role = discord.utils.get(user.guild.roles, id=clan_family['clans'][clanid]["leader"])
+                                        await user.add_roles(role)
+                                    clan_family_roles_given.append(clan_family['clans'][clanid]["leader"])
 
                             break
 
@@ -551,9 +554,12 @@ async def sync_command(userid):
                 await original_msg.edit(embed=embed)
 
 
-    except Exception as e:
-        print(f'Sync Error: {e}')
-        embed = discord.Embed(description=f'{cross_emoji} Ett problem har inträffat!\n```{e}```',
+
+    except Exception:
+        print('|| SYNC ERROR ||')
+        traceback.print_exc()
+
+        embed = discord.Embed(description=f'{cross_emoji} Ett problem har inträffat!',
                               color=discord.Colour(0xb31e35))
         await channel.send(embed=embed)
 
