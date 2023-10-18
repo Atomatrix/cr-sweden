@@ -295,11 +295,6 @@ async def unlink(ctx):
             await ctx.author.remove_roles(
                 discord.utils.get(ctx.author.guild.roles, id=settings['roles']['clans']['basic']['account-linked']))
 
-        # Give temporary role
-        if settings['roles']['clans']['basic']['temporary'] not in [r.id for r in ctx.author.roles]:
-            await ctx.author.add_roles(
-                discord.utils.get(ctx.author.guild.roles, id=settings['roles']['clans']['basic']['temporary']))
-
         await log(
             message=f'<@{ctx.author.id}> har unlinkat sitt konto!',
             colour=greenColour
@@ -528,11 +523,6 @@ async def sync_command(userid):
                 if settings['roles']['clans']['basic']['account-linked'] not in [r.id for r in user.roles]:
                     await user.add_roles(
                         discord.utils.get(user.guild.roles, id=settings['roles']['clans']['basic']['account-linked']))
-
-                # Remove temporary role
-                if settings['roles']['clans']['basic']['temporary'] in [r.id for r in user.roles]:
-                    await user.remove_roles(
-                        discord.utils.get(user.guild.roles, id=settings['roles']['clans']['basic']['temporary']))
 
                 embed = discord.Embed(description=f'{tick_emoji} Synkade roller åt **{name}** `{tag}`',
                                       color=greenColour)
