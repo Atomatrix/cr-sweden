@@ -35,7 +35,6 @@ channels:
 roles:
   utility:
     ignore-nickname-change: 1046453482510622800
-    dunce: 1046534739072385184
     accepted-tournament-rules: 1094987394119372942
     disqualified: 1046453483932483584
     
