@@ -534,21 +534,6 @@ async def sync_command(userid):
                     await user.remove_roles(
                         discord.utils.get(user.guild.roles, id=settings['roles']['clans']['basic']['temporary']))
 
-                # GIVE DUNCE ROLE
-                dunce = await dunce_status(userid)
-
-                if dunce:
-                    if settings['roles']['utility']['dunce'] not in [r.id for r in
-                                                                     user.roles]:  # If they don't have the role, give it to them
-                        await user.add_roles(
-                            discord.utils.get(user.guild.roles, id=settings['roles']['utility']['dunce']))
-
-                if not dunce:
-                    if settings['roles']['utility']['dunce'] in [r.id for r in
-                                                                 user.roles]:  # If they have the role, remove it from them
-                        await user.remove_roles(
-                            discord.utils.get(user.guild.roles, id=settings['roles']['utility']['dunce']))
-
                 embed = discord.Embed(description=f'{tick_emoji} Synkade roller åt **{name}** `{tag}`',
                                       color=greenColour)
                 await original_msg.edit(embed=embed)
@@ -609,59 +594,6 @@ async def suggest(ctx, suggestion):
                           color=greenColour)
     await ctx.respond(embed=embed, ephemeral=True)
 
-
-@punishment.command(name="list", description='List all users who have been punished')
-@commands.cooldown(3, 15, commands.BucketType.user)  # The command can only be used 3 times in 15 seconds
-async def punishment_list(ctx):
-    message = ''
-
-    for userid in await all_dunce_users():
-        user = await bot.fetch_user(userid)
-        message = message + f'- **{user}** `{user.id}`\n'
-
-    embed = discord.Embed(title=f'Punished Users', description=message, color=defaultColour)
-
-    await ctx.respond(embed=embed)
-
-
-@punishment.command(name="add",
-                    description='Varna andra om spelarens beteende! Låser ett antal funktioner & ger ut en ful rollfärg.')
-@option("user", discord.User, description="Namnet på spelaren!", required=True)
-@option("reason", description="Inkludera detaljer om varför du valt att sätta spelaren i skamvrån!", required=True)
-@commands.cooldown(5, 3600, commands.BucketType.user)  # The command can only be used 5 times in 3600 seconds
-async def suggest(ctx, user, reason):
-    if await dunce_status(user.id):
-        await ctx.respond('Den här spelaren är redan placerad i skamvrån!')
-
-    else:
-
-        change_dunce(user.id, new_value=True)
-
-        channel = bot.get_channel(settings['channels']['dunce-logs'])
-        await channel.send(f'**{ctx.author}** `{ctx.author.id}` placerade **{user}** `{user}` i skamvrån pågrund.')
-
-        await ctx.respond('Jag placerade den här spelaren i skamvrån!', ephemeral=True)
-
-        await sync_command(user.id)
-
-
-@punishment.command(name="remove", description='Ta ut en spelare ur skamvrån! Återger normal tillgång till servern!')
-@option("user", discord.User, description="Namnet på spelaren!", required=True)
-@commands.cooldown(5, 3600, commands.BucketType.user)  # The command can only be used 5 times in 3600 seconds
-async def suggest(ctx, user):
-    if not await dunce_status(user.id):
-        await ctx.respond('Den här spelaren är inte placerad i skamvrån!')
-
-    else:
-
-        change_dunce(user.id, new_value=False)
-
-        await ctx.respond('Jag tog ut spelaren ur skamvrån!', ephemeral=True)
-
-        channel = bot.get_channel(settings['channels']['dunce-logs'])
-        await channel.send(f'**{ctx.author}** `{ctx.author.id}` tog ut **{user}** `{user}` ur skamvrån.')
-
-        await sync_command(user.id)
 
 
 async def cardListWithoutChampions():
