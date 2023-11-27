@@ -135,9 +135,9 @@ async def info(ctx):
 
     embed.add_field(name='Language', value=f':flag_se: `se`')
     embed.add_field(name='Linked Accounts', value=f':handshake: `{await total_linked()}`')
-    embed.add_field(name='Developer', value=f':computer: [github.com/thomaskeig](https://github.com/thomaskeig)')
+    embed.add_field(name='Developer', value=f':computer: [github.com/Atomatrix](https://github.com/Atomatrix)')
     embed.add_field(name='Open Source Repository',
-                    value=f':open_file_folder: [thomaskeig/cr-sweden](https://github.com/thomaskeig/cr-sweden)')
+                    value=f':open_file_folder: [Atomatrix/cr-sweden](https://github.com/Atomatrix/cr-sweden)')
 
     embed.set_footer(text=f'{bot.user} - Developed by thomaskeig', icon_url=bot.user.avatar.url)
 
@@ -159,8 +159,7 @@ async def on_message(message):
     except:
         pass
 
-    if message.channel.id == settings['channels'][
-        'link'] and message.author.id != bot.user.id and message.author.id not in settings['link-channel-ignored-ids']:
+    if message.channel.id == settings['channels']['link'] and message.author.id != bot.user.id and message.author.id not in settings['link-channel-ignored-ids']:
         # Check if message was sent in link channel ||| message not sent by the bot ||| message not sent by ignored users
         message_content = message.content
 
@@ -254,6 +253,13 @@ async def on_message(message):
                                 colour=greenColour
                             )
 
+    # Forward on a DM if one is sent.
+    if isinstance(message.channel, discord.DMChannel):
+        embed = discord.Embed(description=f'Received a DM from <@{message.author.id}>:\n```{message.content}```', color=defaultColour)
+        embed.set_footer(text=f"{message.author.name} - {message.author.id}")
+
+        channel = bot.get_channel(settings['channels']['new-dm-logs'])
+        await channel.send(embed=embed)
 
 @bot.command(name="unlink", description='Unlink your Clash Royale account from your Discord Account.')
 @commands.cooldown(3, 30, commands.BucketType.user)
@@ -1535,6 +1541,50 @@ async def change_to_random_banner():
 
     await channel.send(embed=embed)
 
+
+@bot.command(name="massdm", description='Mass DM all users in the server with a message')
+@option("title", description="The embed title. Keep this short.", required=False)
+@option("description", description="The embed description. This can be longer at a maximum of 4000 characters.", required=False)
+@option("image_url", description="An image to display in the embed. Give a direct image link!", required=False)
+async def massdm(ctx, title=None, description=None, image_url=None):
+    await ctx.defer()
+
+    if title is None and description is None and image is None:
+        await ctx.respond('You must either specify an embed title, description or image link!', ephemeral=True)
+
+    mass_id = random.randint(100000, 999999)
+
+    # Compose Custom Embed
+    embed = discord.Embed(title=title, description=description, color=discord.Colour(0x2b2d31))
+    if image_url is not None:
+        embed.set_image(url=image_url)
+
+    server = bot.get_guild(settings['servers']['main'])
+    logchannel = bot.get_channel(settings['channels']['mass-dm-logs'])
+    member_count = server.member_count
+
+    # Send response to user
+    userResponse = discord.Embed(description=f':white_check_mark: Mass DM started with ID `{mass_id}` and `{member_count}` members.\n\n:bar_chart: See <#{logchannel.id}> for logs.\n\n:alarm_clock: Estimated time: Minimum `{round(member_count / 240, 1)} hours`. Maximum `{round(member_count / 120, 1)} hours`.', color=defaultColour)
+    await ctx.respond(embed=userResponse)
+
+    # Send Embed
+    inc_count = 1
+    for member in server.members:
+        try:
+            await member.send(embed=embed)
+
+            successEmbed = discord.Embed(description=f'`{mass_id}` - Successfully sent a mass DM message to <@{member.id}> `{member.id}` ({inc_count}/{member_count})', color=greenColour)
+            await logchannel.send(embed=successEmbed)
+        except:
+            failedEmbed = discord.Embed(description=f'`{mass_id}` - Failed to send a mass DM message to <@{member.id}> `{member.id}` ({inc_count}/{member_count})', color=redColour)
+            await logchannel.send(embed=failedEmbed)
+
+        inc_count += 1
+        wait_time = random.randint(15, 30)
+        await asyncio.sleep(wait_time)
+
+    completelyDoneEmbed = discord.Embed(description=f'Mass DM `{mass_id}` has completed', color=greenColour)
+    await logchannel.send(embed=completelyDoneEmbed)
 
 @tasks.loop(hours=24)
 async def change_banner():
