@@ -136,8 +136,6 @@ async def info(ctx):
     embed.add_field(name='Language', value=f':flag_se: `se`')
     embed.add_field(name='Linked Accounts', value=f':handshake: `{await total_linked()}`')
     embed.add_field(name='Developer', value=f':computer: [github.com/Atomatrix](https://github.com/Atomatrix)')
-    embed.add_field(name='Open Source Repository',
-                    value=f':open_file_folder: [Atomatrix/cr-sweden](https://github.com/Atomatrix/cr-sweden)')
 
     embed.set_footer(text=f'{bot.user} - Developed by thomaskeig', icon_url=bot.user.avatar.url)
 
