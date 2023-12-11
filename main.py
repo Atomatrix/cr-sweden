@@ -1543,13 +1543,14 @@ async def change_to_random_banner():
 
 
 @bot.command(name="massdm", description='Mass DM all users in the server with a message')
+@option("message_content", description="The text to show in the message content.", required=False)
 @option("title", description="The embed title. Keep this short.", required=False)
 @option("description", description="The embed description. This can be longer at a maximum of 4000 characters.", required=False)
 @option("image_url", description="An image to display in the embed. Give a direct image link!", required=False)
-async def massdm(ctx, title=None, description=None, image_url=None):
+async def massdm(ctx, message_content=None, title=None, description=None, image_url=None):
     await ctx.defer()
 
-    if title is None and description is None and image is None:
+    if message_content is None and title is None and description is None and image_url is None:
         await ctx.respond('You must either specify an embed title, description or image link!', ephemeral=True)
 
     mass_id = random.randint(100000, 999999)
@@ -1571,7 +1572,10 @@ async def massdm(ctx, title=None, description=None, image_url=None):
     inc_count = 1
     for member in server.members:
         try:
-            await member.send(embed=embed)
+            if message_content is None:
+                await member.send(embed=embed)
+            else:
+                await member.send(content=message_content, embed=embed)
 
             successEmbed = discord.Embed(description=f'`{mass_id}` - Successfully sent a mass DM message to <@{member.id}> `{member.id}` ({inc_count}/{member_count})', color=greenColour)
             await logchannel.send(embed=successEmbed)
