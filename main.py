@@ -1233,7 +1233,7 @@ async def royaleapi(ctx, user):
         await ctx.respond(embed=embed, ephemeral=True)
 
     else:
-        embed = discord.Embed(title=f'{user}\'s RoyaleAPI Profile', description=f'https://royaleapi.com/player/{tag}',
+        embed = discord.Embed(description=f'## <@{user.id}>\'s RoyaleAPI Profile\n\n> https://royaleapi.com/player/{tag}',
                               color=defaultColour)
         await ctx.respond(embed=embed, ephemeral=True)
 
