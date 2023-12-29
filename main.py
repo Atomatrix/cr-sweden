@@ -1229,7 +1229,7 @@ async def royaleapi(ctx, user):
     tag = await get_tag(user.id)
 
     if tag is None:
-        embed = discord.Embed(description='That user has not linked their account yet!', color=defaultColour)
+        embed = discord.Embed(description='That user has not linked their account yet!', color=redColour)
         await ctx.respond(embed=embed, ephemeral=True)
 
     else:
