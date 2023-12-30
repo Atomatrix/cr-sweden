@@ -34,6 +34,8 @@ channels:
 
   suggestions: 1046523386274263071
 
+  help: 1083893153628704769 # Used for messages, not bot functions
+
 roles:
   utility:
     ignore-nickname-change: 1046453482510622800

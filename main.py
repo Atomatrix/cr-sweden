@@ -40,6 +40,10 @@ api = {"Authorization": "Bearer " + settings['api-key']}
 defaultColour = discord.Colour(0x0094e9)
 greenColour = discord.Colour(0x2ECC71)
 redColour = discord.Colour(0xB21E35)
+desktopInvisibleColour = discord.Colour(0x181818)
+mobileInvisibleColour = discord.Colour(0x272733)
+
+embedInvisibleLineUrl = 'https://i.imgur.com/8iRrq8a.png'
 
 trophy_emoji = '<:trophies:870361537087414292>'
 swords_emoji = '<:swords:870361536923848765>'
@@ -145,8 +149,9 @@ async def info(ctx):
 # Check for account link messages
 @bot.event
 async def on_message(message):
+
     # // Ignore bot messages
-    if message.author == bot.user:
+    if message.author.id == bot.user.id:
         return
 
     # // Auto publish announcement channel messages
@@ -157,16 +162,19 @@ async def on_message(message):
     except:
         pass
 
-    if message.channel.id == settings['channels']['link'] and message.author.id != bot.user.id and message.author.id not in settings['link-channel-ignored-ids']:
+    if message.channel.id == settings['channels']['link'] and message.author.id not in settings['link-channel-ignored-ids']:
         # Check if message was sent in link channel ||| message not sent by the bot ||| message not sent by ignored users
         message_content = message.content
 
         channel = bot.get_channel(message.channel.id)
 
         if await is_linked_discord(message.author.id):
+
             embed = discord.Embed(
-                description=f'<@{message.author.id}> Du har redan länkat ett konto! Ta bort länken genom att använda kommandot `/unlink`!',
+                description=f'### DITT KONTO ÄR REDAN LÄNKAT\n### PRÖVA __/UNLINK__ & FÖRSÖK IGEN\n### ANVÄND <#{settings["channels"]["help"]}> FÖR ATT FÅ HJÄLP',
                 color=redColour)
+            embed.set_image(url=embedInvisibleLineUrl)
+
             embed_message = await channel.send(embed=embed)
             await message.delete()
             await asyncio.sleep(10)
@@ -175,8 +183,9 @@ async def on_message(message):
         else:
             if len(message_content) > 15:
                 embed = discord.Embed(
-                    description=f'<@{message.author.id}> Det där ser inte ut som en Clash Royale #tag, dubbelkolla så att du skrivit rätt eller be om hjälp!',
+                    description=f'### REGISTRERA DIG GENOM ATT SKRIVA DIN __#TAG__\n### ANVÄND <#{settings["channels"]["help"]}> FÖR ATT FÅ HJÄLP',
                     color=redColour)
+                embed.set_image(url=embedInvisibleLineUrl)
                 embed_message = await channel.send(embed=embed)
                 await message.delete()
                 await asyncio.sleep(10)
@@ -186,8 +195,9 @@ async def on_message(message):
 
             if await is_linked_cr(tag):  # Check if the tag already linked
                 embed = discord.Embed(
-                    description=f'<@{message.author.id}> #tag är redan i använding. Vänligen länka ditt egna konto!',
+                    description=f'### DEN HÄR ANVÄNDARTAGGEN ÄR REDAN KOPPLAD\n### VÄNLIGEN LÄNKA DITT EGNA KONTO\n### ANVÄND <#{settings["channels"]["help"]}> FÖR ATT FÅ HJÄLP',
                     color=redColour)
+                embed.set_image(url=embedInvisibleLineUrl)
                 embed_message = await channel.send(embed=embed)
                 await message.delete()
                 await asyncio.sleep(10)
@@ -202,6 +212,7 @@ async def on_message(message):
                             embed = discord.Embed(
                                 description=f'<@{message.author.id}> Ett internt problem har skett. API\'n tillåter inte tillgången till den här serverns IP.',
                                 color=redColour)
+                            embed.set_image(url=embedInvisibleLineUrl)
                             embed_message = await channel.send(embed=embed)
                             await message.delete()
                             await asyncio.sleep(10)
@@ -209,8 +220,9 @@ async def on_message(message):
 
                         elif data.status == 404:
                             embed = discord.Embed(
-                                description=f'<@{message.author.id}> Jag hittar inte det där kontot. Se till att du skrivit rätt #tag!',
+                                description=f'### KONTOT EXISTERAR INTE\n### DUBBELKOLLA SÅ ATT DU HAR SKRIVIT RÄTT #TAG\n### ANVÄND <#{settings["channels"]["help"]}> FÖR ATT FÅ HJÄLP',
                                 color=redColour)
+                            embed.set_image(url=embedInvisibleLineUrl)
                             embed_message = await channel.send(embed=embed)
                             await message.delete()
                             await asyncio.sleep(10)
@@ -218,8 +230,9 @@ async def on_message(message):
 
                         elif data.status != 200:
                             embed = discord.Embed(
-                                description=f'<@{message.author.id}> Ett okänt internt problem har inträffat. Ber om ursäkt för det! Vänligen kontakta en Administratör för hjälp! (Error {data.status})',
+                                description=f'### ETT OKÄNT PROBLEM HAR UPPSTÅTT\n### KONTAKTA OMEDELBART <@282548554285711370>\n### ANVÄND KNAPPEN UNDER FÖR ATT FÅ HJÄLP (ERROR {data.status})',
                                 color=redColour)
+                            embed.set_image(url=embedInvisibleLineUrl)
                             embed_message = await channel.send(embed=embed)
                             await message.delete()
                             await asyncio.sleep(10)
@@ -236,8 +249,9 @@ async def on_message(message):
                             await add_user(discordid=message.author.id, cr_tag=official_tag)
 
                             embed = discord.Embed(
-                                description=f'<@{message.author.id}> har länkat sitt konto till "{official_name}" `#{official_tag}`',
+                                description=f'### <@{message.author.id}> ÄR NU KOPPLAT TILL "{official_name}" #{official_tag}\n### VÄLKOMMEN IN',
                                 color=greenColour)
+                            embed.set_image(url=embedInvisibleLineUrl)
                             embed_message = await channel.send(embed=embed)
                             await message.delete()
 
