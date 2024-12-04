@@ -273,6 +273,75 @@ async def on_message(message):
         channel = bot.get_channel(settings['channels']['new-dm-logs'])
         await channel.send(embed=embed)
 
+
+@bot.command(name='forcelink', description='Forcelink a user\'s account')
+@discord.default_permissions(administrator=True)
+@option("user", discord.User, description="The discord user to link.", required=True)
+@option("cr_tag", description="The user's Clash Royale tag. Enter \"0\" to completely unlink this user from any CR account.", required=True)
+@option("overwrite", description="Overwrite the linked account if the user is already linked", required=False,
+        choices=['Yes', 'No'])
+async def forcelink(ctx, user, cr_tag, overwrite: str = 'No'):
+
+    # Remove a # if there
+    cr_tag = cr_tag.replace('#', '')
+
+    discord_is_linked = await is_linked_discord(user.id)
+
+    # Completely unlink user
+    if cr_tag == "0":
+        
+        # Remove user from database
+        await remove_user(user.id)
+
+        embed = discord.Embed(
+            title='Account Unlinked!',
+            description=f'<@{user.id}> has been unlinked from their Clash Royale account (if they had one linked).',
+            color=greenColour
+        )
+
+        await ctx.respond(embed=embed)
+
+        # Sync user's roles
+        await sync_command(user.id)
+
+        # Send log
+        channel = bot.get_channel(settings['channels']['forcelink-logs'])
+        await channel.send(content=f'<@{ctx.author.id}> has force unlinked <@{user.id}> from their CR account (if they had one linked).')
+
+        return
+
+    if discord_is_linked and overwrite == 'No':
+        embed = discord.Embed(
+            title='Their account is already linked!',
+            description=f'Their account is already linked to #{cr_tag}!\nSet "overwrite" to **Yes** if you wish to overwrite this user\'s account.',
+            color=redColour
+        )
+        await ctx.respond(embed=embed, ephemeral=True)
+
+    else:
+
+        # Remove the user, just incase they're linked to another ID
+        await remove_user(user.id)
+
+        # Add user to the database
+        await add_user(user.id, cr_tag)
+
+        embed = discord.Embed(
+            title='Accounts Linked!',
+            description=f'<@{user.id}> has been linked to the Clash Royale tag #{cr_tag}.\n\nTheir roles will sync now!',
+            color=defaultColour
+        )
+
+        await ctx.respond(embed=embed)
+
+        # Sync user's roles
+        await sync_command(user.id)
+
+        # Send log
+        channel = bot.get_channel(settings['channels']['forcelink-logs'])
+        await channel.send(content=f'<@{ctx.author.id}> has linked <@{user.id}> to the Clash Royale account #{cr_tag}.')
+
+
 @bot.command(name="unlink", description='Unlink your Clash Royale account from your Discord Account.')
 @commands.cooldown(3, 30, commands.BucketType.user)
 async def unlink(ctx):
@@ -328,10 +397,38 @@ async def sync_command(userid):
 
         channel = bot.get_channel(settings['channels']['sync-logs'])
 
-        if await is_linked_discord(userid):
+        server = bot.get_guild(settings['servers']['main'])
+        user = server.get_member(int(userid))
 
-            server = bot.get_guild(settings['servers']['main'])
-            user = server.get_member(int(userid))
+        if not await is_linked_discord(userid):
+            # If they don't have a CR account linked, remove any roles they could have
+
+            # Create Clan Member ID List (Roles to be removed)
+            clan_member_id_list = []
+
+            # Leader, coleader, elder, member (global)
+            clan_member_id_list.extend([settings['roles']['clans']['leader'], settings['roles']['clans']['coleader'], settings['roles']['clans']['elder'], settings['roles']['clans']['member']])
+
+            # Account Linked, Temporary
+            clan_member_id_list.extend([settings['roles']['clans']['basic']['account-linked'], settings['roles']['clans']['basic']['temporary']])
+
+            with open('./data/otherClans.json', 'r') as f:
+                other_clans = json.load(f)
+
+            for i in other_clans:
+                clan_member_id_list.extend([i['global']['member'], i['global']['elder'], i['global']['coleader'], i['global']['leader']])
+
+                for clanid in i['clans']:
+                    clan_member_id_list.extend([i['clans'][clanid]['member'], i['clans'][clanid]['elder'], i['clans'][clanid]['coleader'], i['clans'][clanid]['leader']])
+
+            # Remove roles
+            for a in clan_member_id_list:  # For every clan member role, remove it from the user if them have it
+                if a in [r.id for r in user.roles]:
+                    await user.remove_roles(discord.utils.get(user.guild.roles, id=a))
+
+            pass
+
+        else:
 
             tag = await get_tag(userid)
 
@@ -367,8 +464,11 @@ async def sync_command(userid):
 
                 # Only change nickname if they don't have the ignore nickname change role
                 try:
-                    if settings['roles']['utility']['ignore-nickname-change'] not in [r.id for r in user.roles]:
+                    if settings['roles']['utility']['ignore-nickname-change'] in [r.id for r in user.roles]:
+                        await user.edit(nick=None)
+                    else:
                         await user.edit(nick=name)
+                        
 
                 except:  # If the bot doesn't have permission to change the nickname, it doesn't halt
                     pass

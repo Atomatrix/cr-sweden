@@ -82,11 +82,15 @@ async def total_linked():
 # !! # Utilities for fetching a Discord ID or tag from the database
 async def get_tag(discordid):
     document = await db().users.find_one({'discord_id': int(discordid)})
-    return document['cr_tag']
+    if document:
+        return document['cr_tag']
+    return None
 
 async def get_discordid(cr_tag):
     document = await db().users.find_one({'cr_tag': cr_tag})
-    return document['discord_id']
+    if document:
+        return document['discord_id']
+    return None
 
 
 
