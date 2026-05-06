@@ -1,5 +1,5 @@
 import asyncio
-from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo import AsyncMongoClient
 import yaml
 
 with open('./settings.yml', encoding="utf8") as file:
@@ -10,7 +10,7 @@ with open('./settings.yml', encoding="utf8") as file:
 
 def db():
     uri = f'mongodb+srv://{username}:{password}@{database_name}.mongodb.net/?retryWrites=true&w=majority'
-    client = AsyncIOMotorClient(uri)
+    client = AsyncMongoClient(uri)
 
     return client['clashroyale']
 
@@ -18,11 +18,11 @@ def db():
 async def ping_server():
 
     uri = f'mongodb+srv://{username}:{password}@{database_name}.mongodb.net/?retryWrites=true&w=majority'
-    client = AsyncIOMotorClient(uri)
+    client = AsyncMongoClient(uri)
 
     # Send a ping to confirm a successful connection
     try:
-        client.admin.command('ping')
+        await client.admin.command('ping')
         return True
     except Exception as e:
         return e

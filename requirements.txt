@@ -1,0 +1,4 @@
+pymongo[srv]>=4.9
+py-cord
+pyyaml
+python-dateutil
